@@ -147,7 +147,7 @@ public class MemberController {
             String userid;
 
             if (principal instanceof UserDetails) {
-                userid = ((UserDetails) principal).getUsername();
+                userid = String.valueOf(((Member) principal).getUserid());
             } else if (principal instanceof String) {
                 userid = (String) principal;
             } else {
