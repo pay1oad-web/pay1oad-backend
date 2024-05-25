@@ -2,13 +2,11 @@ package com.pay1oad.homepage.dto.board;
 
 import com.pay1oad.homepage.model.board.Board;
 import com.pay1oad.homepage.model.login.Member;
+
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Getter
 @Setter

@@ -84,7 +84,7 @@ public class BoardController {
     // 상세보기 -> 수정
     @PatchMapping("/{boardId}/update")
     public ResponseEntity<ResBoardDetailsDTO> update(
-            @PathVariable Long boardId,
+            @PathVariable("boardId") Long boardId,
             @RequestBody BoardUpdateDTO boardDTO,
             @AuthenticationPrincipal Member member) {
         if (!boardService.checkOwnership(boardId, member.getUsername())) {
@@ -98,7 +98,7 @@ public class BoardController {
     // 게시글 삭제
     @DeleteMapping("/{boardId}/delete")
     public ResponseEntity<?> delete(
-            @PathVariable Long boardId,
+            @PathVariable("boardId") Long boardId,
             @AuthenticationPrincipal Member member) {
         // 권한 검증 로직
         if (!boardService.checkOwnership(boardId, member.getUsername())) {

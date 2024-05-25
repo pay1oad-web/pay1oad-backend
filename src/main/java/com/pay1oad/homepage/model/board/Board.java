@@ -1,11 +1,24 @@
 package com.pay1oad.homepage.model.board;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.hibernate.annotations.BatchSize;
+
 import com.pay1oad.homepage.model.login.Member;
-import jakarta.persistence.*;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.BatchSize;
 
 @Entity
 @Getter
@@ -28,13 +41,13 @@ public class Board extends BaseTimeEntity {
     @JoinColumn(name = "userid")
     private Member member;
 
-    /*@OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @BatchSize(size = 10)
     private List<Comment> comments = new ArrayList<>();
 
     @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @BatchSize(size = 10)
-    public List<FileEntity> files = new ArrayList<>();*/
+    public List<FileEntity> files = new ArrayList<>();
 
     @Builder
     public Board(Long id, String title, String content, int viewCount, Member member) {

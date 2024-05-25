@@ -1,22 +1,20 @@
 package com.pay1oad.homepage.dto.board;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class SearchDTO {
     String title;
     String content;
     String username;
-
-    @Builder
-    public SearchDTO(String title, String content, String username) {
-        this.title = title;
-        this.content = content;
-        this.username = username;
-    }
 
     public static SearchDTO createdSearchData(String title, String content, String username) {
         return SearchDTO.builder()

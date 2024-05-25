@@ -1,5 +1,6 @@
 package com.pay1oad.homepage.security;
 
+import com.pay1oad.homepage.model.login.Member;
 import com.pay1oad.homepage.service.login.JwtRedisService;
 import com.pay1oad.homepage.service.login.MemberService;
 import jakarta.servlet.FilterChain;
@@ -55,13 +56,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if(token!=null&&!token.equalsIgnoreCase("null")){
                 //validate login
                 String userID=tokenProvider.validateAndGetUserId(token);
+                Member member = memberService.getMemberByID(Integer.valueOf(userID));
                 //log.info("Userid: "+userID);
                 String Username= String.valueOf(memberService.getUsername(Integer.valueOf(userID)));
                 //log.info("Username: "+Username);
                 if(Objects.equals(jwtRedisService.getValues(Username), token)){//jwtRedisService.getJwtListByJwt(token)
                     log.info("Authenticated user Name"+userID.replaceAll("[\r\n]",""));
                     AbstractAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                            userID,
+                    		member,
                             null,
                             AuthorityUtils.NO_AUTHORITIES
                     );
