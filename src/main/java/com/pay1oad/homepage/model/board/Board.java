@@ -3,19 +3,11 @@ package com.pay1oad.homepage.model.board;
 import java.util.ArrayList;
 import java.util.List;
 
+import jakarta.persistence.*;
 import org.hibernate.annotations.BatchSize;
 
 import com.pay1oad.homepage.model.login.Member;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,16 +17,17 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class Board extends BaseTimeEntity {
 
-    @Id @GeneratedValue
-    @Column(name = "BOARDID")
-    private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "board_id")
+    private Long board_id;
 
     @Column(nullable = false)
     private String title;
 
     private String content;
 
-    @Column(name = "VIEW_COUNT")
+    @Column(name = "view_count")
     private int viewCount;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -51,7 +44,7 @@ public class Board extends BaseTimeEntity {
 
     @Builder
     public Board(Long id, String title, String content, int viewCount, Member member) {
-        this.id = id;
+        this.board_id = id;
         this.title = title;
         this.content = content;
         this.viewCount = viewCount;

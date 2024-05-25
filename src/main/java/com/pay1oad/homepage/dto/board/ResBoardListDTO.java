@@ -34,7 +34,7 @@ public class ResBoardListDTO {
     public static ResBoardListDTO fromEntity(Board board) {
         Member member = board.getMember(); // Member 객체 가져오기
         return ResBoardListDTO.builder()
-                .boardId(board.getId())
+                .boardId(board.getBoard_id())
                 .title(board.getTitle())
                 .content(board.getContent())
                 .viewCount(board.getViewCount())

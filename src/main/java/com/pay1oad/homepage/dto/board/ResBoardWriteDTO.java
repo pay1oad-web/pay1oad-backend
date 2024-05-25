@@ -28,7 +28,7 @@ public class ResBoardWriteDTO {
 
     public static ResBoardWriteDTO fromEntity(Board board, Member member) {
         return ResBoardWriteDTO.builder()
-                .boardId(board.getId())
+                .boardId(board.getBoard_id())
                 .title(board.getTitle())
                 .content(board.getContent())
                 .username(member.getUsername())
