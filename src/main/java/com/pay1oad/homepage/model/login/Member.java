@@ -49,7 +49,8 @@ public class Member implements UserDetails {
 
     private String email;
 
-    private String role;
+	@Column(nullable = false)
+	private MemberAuth memberAuth;
 
     private String authProvider;
 

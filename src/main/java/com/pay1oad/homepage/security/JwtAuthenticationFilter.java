@@ -1,6 +1,7 @@
 package com.pay1oad.homepage.security;
 
 import com.pay1oad.homepage.model.login.Member;
+import com.pay1oad.homepage.service.login.CustomUserDetailsService;
 import com.pay1oad.homepage.service.login.JwtRedisService;
 import com.pay1oad.homepage.service.login.MemberService;
 import jakarta.servlet.FilterChain;
@@ -14,6 +15,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -37,6 +39,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private MemberService memberService;
 
+    @Autowired
+    private CustomUserDetailsService userDetailsService;
+
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String[] excludePath = {"/auth/signup", "/auth/signin", "/verify/email"};
@@ -47,38 +52,32 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        try{
-            //log.info("request "+ request);
-            String token=parseBearerToken(request);
-            log.info("Filter is runnung...");
-            //log.info("Token "+token.replaceAll("[\r\n]",""));
-
-            if(token!=null&&!token.equalsIgnoreCase("null")){
-                //validate login
-                String userID=tokenProvider.validateAndGetUserId(token);
-                Member member = memberService.getMemberByID(Integer.valueOf(userID));
-                //log.info("Userid: "+userID);
-                String Username= String.valueOf(memberService.getUsername(Integer.valueOf(userID)));
-                //log.info("Username: "+Username);
-                if(Objects.equals(jwtRedisService.getValues(Username), token)){//jwtRedisService.getJwtListByJwt(token)
-                    log.info("Authenticated user Name"+userID.replaceAll("[\r\n]",""));
-                    AbstractAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    		member,
-                            null,
-                            AuthorityUtils.NO_AUTHORITIES
-                    );
-                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
-                    securityContext.setAuthentication(authentication);
-                    SecurityContextHolder.setContext(securityContext);
-                }else{
-                    log.info("Logged out JWT");
+        try {
+            String token = parseBearerToken(request);
+            if (token != null && !token.equalsIgnoreCase("null")) {
+                String userID = tokenProvider.validateAndGetUserId(token);
+                String username = memberService.getUsername(Integer.valueOf(userID));
+                if (Objects.equals(jwtRedisService.getValues(username), token)) {
+                    // Load user details to get authorities
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                    if (userDetails != null) {
+                        AbstractAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                                userDetails.getUsername(),
+                                null,
+                                userDetails.getAuthorities()
+                        );
+                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
+                        securityContext.setAuthentication(authentication);
+                        SecurityContextHolder.setContext(securityContext);
+                    } else {
+                        log.info("Logged out JWT");
+                    }
+                } else {
+                    log.info("Authentication failed in JWT");
                 }
-            }else{
-                log.info("Authentication faild in JWT");
             }
-
-        }catch(Exception ex){
+        } catch (Exception ex) {
             logger.error("Could not set user auth in security context", ex);
         }
 
