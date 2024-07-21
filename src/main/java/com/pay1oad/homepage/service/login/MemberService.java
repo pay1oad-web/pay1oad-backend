@@ -1,4 +1,5 @@
 package com.pay1oad.homepage.service.login;
+import com.pay1oad.homepage.model.login.MemberAuth;
 import lombok.extern.slf4j.Slf4j;
 import com.pay1oad.homepage.model.login.Member;
 import com.pay1oad.homepage.persistence.login.MemberRepository;
@@ -11,17 +12,17 @@ public class MemberService {
     @Autowired
     private MemberRepository memberRepository;
 
-    public Member create(final Member member){
-        if(member==null||member.getUsername()==null){
+    public Member create(final Member member) {
+        if (member == null || member.getUsername() == null) {
             throw new RuntimeException("Invalid Arguments");
         }
-        final String username=member.getUsername();
-        if(memberRepository.existsByUsername(username)){
-            log.warn("Username already exists {}", username.replaceAll("[\r\n]",""));
+        final String username = member.getUsername();
+        if (memberRepository.existsByUsername(username)) {
+            log.warn("Username already exists {}", username.replaceAll("[\r\n]", ""));
             throw new RuntimeException("Username already exists");
         }
-        final String email=member.getEmail();
-        final String verified= String.valueOf(false);
+
+        member.setMemberAuth(MemberAuth.UNAUTH);
 
         return memberRepository.save(member);
     }
