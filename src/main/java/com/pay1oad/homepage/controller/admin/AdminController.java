@@ -5,7 +5,10 @@ import com.pay1oad.homepage.dto.ResponseDTO;
 import com.pay1oad.homepage.dto.admin.AdminRequestDTO;
 import com.pay1oad.homepage.dto.admin.AdminResponseDTO;
 import com.pay1oad.homepage.dto.login.MemberDTO;
+import com.pay1oad.homepage.exception.CustomException;
 import com.pay1oad.homepage.model.login.Member;
+import com.pay1oad.homepage.model.login.MemberAuth;
+import com.pay1oad.homepage.response.code.status.ErrorStatus;
 import com.pay1oad.homepage.service.admin.AdminService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,26 +29,9 @@ public class AdminController {
 
     @PostMapping("/change_auth")
     public ResponseEntity<?> changeAuth(@RequestBody AdminRequestDTO.ToChangeMemberAuthDTO toChangeMemberAuthDTO) {
-        try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        adminService.changeMemberAuth(toChangeMemberAuthDTO);
 
-            boolean hasRequiredRole = authentication.getAuthorities().stream()
-                    .map(GrantedAuthority::getAuthority)
-                    .anyMatch(role -> role.equals("ROLE_ADMIN") || role.equals("ROLE_OPERATOR"));
+        return ResponseEntity.ok().body("Member Auth changed");
 
-            if (!hasRequiredRole) {
-                throw new AccessDeniedException("Access denied");
-            }
-
-            adminService.changeMemberAuth(toChangeMemberAuthDTO);
-
-            return ResponseEntity.ok().body("Member Auth changed");
-
-        }catch(Exception e){
-            ResponseDTO responseDTO=ResponseDTO.builder().error(e.getMessage()).build();
-            return ResponseEntity
-                    .badRequest()
-                    .body(responseDTO);
-        }
     }
 }
