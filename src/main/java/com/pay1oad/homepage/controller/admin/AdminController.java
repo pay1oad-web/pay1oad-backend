@@ -10,6 +10,10 @@ import com.pay1oad.homepage.service.admin.AdminService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @CrossOrigin(origins = "http://localhost:3000")
@@ -20,11 +24,17 @@ import org.springframework.web.bind.annotation.*;
 public class AdminController {
     private final AdminService adminService;
 
-    @PostMapping("/change-auth")
+    @PostMapping("/change_auth")
     public ResponseEntity<?> changeAuth(@RequestBody AdminRequestDTO.ToChangeMemberAuthDTO toChangeMemberAuthDTO) {
         try {
-            if(toChangeMemberAuthDTO.getMemberAuth()==null && toChangeMemberAuthDTO.getUserId()==null){
-                throw new RuntimeException("bad req");
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+            boolean hasRequiredRole = authentication.getAuthorities().stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .anyMatch(role -> role.equals("ROLE_ADMIN") || role.equals("ROLE_OPERATOR"));
+
+            if (!hasRequiredRole) {
+                throw new AccessDeniedException("Access denied");
             }
 
             adminService.changeMemberAuth(toChangeMemberAuthDTO);

@@ -26,7 +26,7 @@ public class SecurityConfig {
                         .requestMatchers(new AntPathRequestMatcher("/auth/**")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("/h2-console/**")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("/verify/email")).permitAll()
-                        //.requestMatchers(new AntPathRequestMatcher("/**")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/admin/**")).permitAll()
 
                         .anyRequest().authenticated()
                 )
@@ -35,7 +35,8 @@ public class SecurityConfig {
                         .ignoringRequestMatchers(new AntPathRequestMatcher("/h2-console/**"))
                         .ignoringRequestMatchers(new AntPathRequestMatcher("/auth/**"))
                         .ignoringRequestMatchers(new AntPathRequestMatcher("/verify/email"))
-                        .ignoringRequestMatchers(new AntPathRequestMatcher("/board/**")))
+                        .ignoringRequestMatchers(new AntPathRequestMatcher("/board/**"))
+                        .ignoringRequestMatchers(new AntPathRequestMatcher("/admin/**")))
 
                 .headers((headers) -> headers
                         .addHeaderWriter(new XFrameOptionsHeaderWriter(
