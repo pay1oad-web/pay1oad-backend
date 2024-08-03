@@ -14,8 +14,11 @@ public enum ErrorStatus {
     _FORBIDDEN(HttpStatus.FORBIDDEN, "COMMON403", "금지된 요청입니다."),
     _EMPTY_FIELD(HttpStatus.NO_CONTENT, "COMMON404", "입력 값이 누락되었습니다."),
 
-    ;
+    _OPERATORAUTHORIZED(HttpStatus.UNAUTHORIZED, "AUTH401", "OPERATOR 권한은 ADMIN 사용자의 권한을 부여 및 수정이 불가합니다"),
 
+
+    ;
+    //
     private final HttpStatus httpStatus;
     private final String code;
     private final String message;
