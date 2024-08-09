@@ -1,5 +1,6 @@
 package com.pay1oad.homepage.controller.board;
 
+import com.pay1oad.homepage.model.board.Category;
 import com.pay1oad.homepage.security.TokenProvider;
 import com.pay1oad.homepage.service.board.BoardService;
 import com.pay1oad.homepage.dto.board.BoardUpdateDTO;
@@ -11,6 +12,7 @@ import com.pay1oad.homepage.dto.board.ResBoardWriteDTO;
 import com.pay1oad.homepage.model.login.Member;
 
 import com.pay1oad.homepage.service.login.MemberService;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,7 +64,8 @@ public class BoardController {
     @PostMapping("/write")
     public ResponseEntity<ResBoardWriteDTO> write(
             @RequestBody BoardWriteDTO boardDTO,
-            @RequestHeader("Authorization") String authorizationHeader) {
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestParam Long categoryId){
         String token = null;
 
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
@@ -71,7 +74,7 @@ public class BoardController {
         int userid= Integer.parseInt(tokenProvider.validateAndGetUserId(token));
         Member member=memberService.getMemberByID(userid);
 
-        ResBoardWriteDTO saveBoardDTO = boardService.write(boardDTO, member);
+        ResBoardWriteDTO saveBoardDTO = boardService.write(boardDTO, member, categoryId);
         return ResponseEntity.status(HttpStatus.CREATED).body(saveBoardDTO);
     }
 
@@ -106,5 +109,14 @@ public class BoardController {
         }
         boardService.delete(boardId);
         return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+    // 카테고리별 게시글 조회
+    @GetMapping("/category/{categoryId}/list")
+    public ResponseEntity<Page<ResBoardListDTO>> getBoardsByCategory(
+            @PathVariable Long categoryId,
+            @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
+        Page<ResBoardListDTO> boards = boardService.getBoardsByCategory(categoryId, pageable);
+        return ResponseEntity.status(HttpStatus.OK).body(boards);
     }
 }

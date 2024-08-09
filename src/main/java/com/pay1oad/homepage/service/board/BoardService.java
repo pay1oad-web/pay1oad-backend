@@ -12,6 +12,8 @@ import com.pay1oad.homepage.dto.board.ResBoardListDTO;
 import com.pay1oad.homepage.dto.board.ResBoardWriteDTO;
 import com.pay1oad.homepage.model.login.Member;
 import com.pay1oad.homepage.persistence.login.MemberRepository;
+import com.pay1oad.homepage.model.board.Category;
+import com.pay1oad.homepage.persistence.board.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -93,4 +95,45 @@ public class BoardService {
                 .map(board -> board.getMember().getUsername().equals(username))
                 .orElse(false);
     }
+
+    private final CategoryRepository categoryRepository;
+
+    // 카테고리별 게시판 조회 기능
+    public Page<ResBoardListDTO> getBoardsByCategory(Long categoryId, Pageable pageable) {
+        Category category = categoryRepository.findById(categoryId).orElseThrow(
+                () -> new ResourceNotFoundException("Category", "Category Id", String.valueOf(categoryId))
+        );
+
+        Page<Board> boards = boardRepository.findByCategory(category, pageable);
+        List<ResBoardListDTO> list = boards.getContent().stream()
+                .map(ResBoardListDTO::fromEntity)
+                .collect(Collectors.toList());
+        return new PageImpl<>(list, pageable, boards.getTotalElements());
+    }
+
+    // 카테고리 지정
+    public ResBoardWriteDTO write(BoardWriteDTO boardDTO, Member member, Long categoryId) {
+        Category category = categoryRepository.findById(categoryId).orElseThrow(
+                () -> new ResourceNotFoundException("Category", "Category Id", String.valueOf(categoryId))
+        );
+
+        Board board = BoardWriteDTO.ofEntity(boardDTO);
+        board.setMember(member);
+        board.setCategory(category);  // 카테고리 설정
+        Board savedBoard = boardRepository.save(board);
+        return ResBoardWriteDTO.fromEntity(savedBoard, member);
+    }
+
+    public Page<ResBoardListDTO> getBoardsByCategoryWithPaging(Long categoryId, Pageable pageable) {
+        Category category = categoryRepository.findById(categoryId).orElseThrow(
+                () -> new ResourceNotFoundException("Category", "Category Id", String.valueOf(categoryId))
+        );
+
+        Page<Board> boards = boardRepository.findByCategory(category, pageable);
+        List<ResBoardListDTO> list = boards.getContent().stream()
+                .map(ResBoardListDTO::fromEntity)
+                .collect(Collectors.toList());
+        return new PageImpl<>(list, pageable, boards.getTotalElements());
+    }
+
 }

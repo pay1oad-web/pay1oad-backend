@@ -1,7 +1,9 @@
 package com.pay1oad.homepage.persistence.board;
 
+import java.util.List;
 import java.util.Optional;
 
+import com.pay1oad.homepage.model.board.Category;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -30,4 +32,7 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
 	// 작성자 검색
 	@Query(value = "SELECT b FROM Board b JOIN FETCH b.member WHERE b.member.username LIKE %:username%")
 	Page<Board> findAllUsernameContaining(@Param("username") String username, Pageable pageable);
+
+	// 카테고리별 게시글 조회
+	Page<Board> findByCategory(Category category, Pageable pageable);
 }
