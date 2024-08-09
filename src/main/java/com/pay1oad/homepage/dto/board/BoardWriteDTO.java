@@ -6,6 +6,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
 /**
  * -Request-
  * 게시글 등록 정보 요청, 작성자는 Authentication 받음
@@ -16,7 +20,11 @@ import lombok.Setter;
 @NoArgsConstructor
 public class BoardWriteDTO {
 
+    @NotBlank(message = "Title is required")
+    @Size(max = 100, message = "Title cannot exceed 100 characters")
     private String title;
+
+    @NotBlank(message = "Content is required")
     private String content;
 
     public BoardWriteDTO(final Board board) {

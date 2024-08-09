@@ -96,7 +96,7 @@ public class BoardController {
     }
 
     // 게시글 삭제
-    @DeleteMapping("/{boardId}/delete")
+    @DeleteMapping("/{boardId}")
     public ResponseEntity<?> delete(
             @PathVariable("boardId") Long boardId,
             @AuthenticationPrincipal Member member) {

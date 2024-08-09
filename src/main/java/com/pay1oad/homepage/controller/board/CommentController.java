@@ -59,7 +59,7 @@ public class CommentController {
         return ResponseEntity.status(HttpStatus.OK).body(updateCommentDTO);
     }
 
-    @DeleteMapping("/delete/{commentId}")
+    @DeleteMapping("/{commentId}")
     public ResponseEntity<Long> delete(
             @AuthenticationPrincipal Member member,
             @PathVariable("commentId") Long commentId) {
