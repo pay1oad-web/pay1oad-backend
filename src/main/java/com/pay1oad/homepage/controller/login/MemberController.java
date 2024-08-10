@@ -1,12 +1,16 @@
 package com.pay1oad.homepage.controller.login;
 
+import com.pay1oad.homepage.dto.login.LoginRequestDTO;
 import com.pay1oad.homepage.dto.login.MemberDTO;
 import com.pay1oad.homepage.dto.ResponseDTO;
 //import com.pay1oad.homepage.event.UserRegistrationEvent;
+import com.pay1oad.homepage.exception.CustomException;
 import com.pay1oad.homepage.model.login.Member;
+import com.pay1oad.homepage.response.code.status.ErrorStatus;
 import com.pay1oad.homepage.security.TokenProvider;
 import com.pay1oad.homepage.service.login.JwtRedisService;
 import com.pay1oad.homepage.service.login.MemberService;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -84,10 +88,10 @@ public class MemberController {
     }
 
     @PostMapping("/signin")
-    public ResponseEntity<?> authenticate(@RequestBody MemberDTO memberDTO){
+    public ResponseEntity<?> authenticate(@Valid @RequestBody LoginRequestDTO.toSignInDTO signInDTO){
         Member member=memberService.getByCredentials(
-                memberDTO.getUsername(),
-                memberDTO.getPasswd());
+                signInDTO.getUserName(),
+                signInDTO.getPasswd());
 
         //log.info(memberDTO.getUsername()+"\n"+memberDTO.getPasswd()+"\n");
         if(member!=null){
@@ -102,8 +106,8 @@ public class MemberController {
             //redis
 
             //Already signed in
-            if(jwtRedisService.getValues(memberDTO.getUsername())!=null){
-                jwtRedisService.deleteValues(memberDTO.getUsername());
+            if(jwtRedisService.getValues(signInDTO.getUserName())!=null){
+                jwtRedisService.deleteValues(signInDTO.getUserName());
             }
 
             //add logged in list
@@ -112,28 +116,7 @@ public class MemberController {
 
             return ResponseEntity.ok().body(responseMemberDTO);
         }else{
-            Member ckmember=memberService.checkID(
-                    memberDTO.getUsername()
-            );
-
-            if(ckmember!=null){
-                ResponseDTO responseDTO=ResponseDTO.builder()
-                        .error("Password error.\nLogin Failed.")
-                        .build();
-
-                return ResponseEntity
-                        .badRequest()
-                        .body(responseDTO);
-            }else{
-                ResponseDTO responseDTO=ResponseDTO.builder()
-                        .error("Member not exist.\nLogin Failed.")
-                        .build();
-
-                return ResponseEntity
-                        .badRequest()
-                        .body(responseDTO);
-            }
-
+            throw new CustomException(ErrorStatus.LOGIN_FAILED_BY_PASSWD_OR_MEMBER_NOT_EXIST);
         }
 
     }
