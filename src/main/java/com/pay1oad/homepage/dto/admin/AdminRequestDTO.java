@@ -1,10 +1,7 @@
 package com.pay1oad.homepage.dto.admin;
 
 import com.pay1oad.homepage.model.login.MemberAuth;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 public class AdminRequestDTO {
     @Getter
@@ -12,7 +9,9 @@ public class AdminRequestDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ToChangeMemberAuthDTO {
+        @NonNull
         private Integer userId;
+        @NonNull
         private MemberAuth memberAuth;
     }
 }
