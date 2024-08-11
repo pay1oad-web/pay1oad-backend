@@ -17,7 +17,9 @@ public enum ErrorStatus {
     _OPERATORAUTHORIZED(HttpStatus.UNAUTHORIZED, "AUTH401", "OPERATOR 권한은 ADMIN 사용자의 권한을 부여 및 수정이 불가합니다"),
 
     Member_USER_NOT_FOUND(HttpStatus.NOT_FOUND, "MEMBER4001", "Member not exist. Login Failed."),
-    LOGIN_FAILED_BY_PASSWD_OR_MEMBER_NOT_EXIST(HttpStatus.UNAUTHORIZED, "MEMBER4002", "유저 또는 비밀번호가 잘못되었습니다.")
+    LOGIN_FAILED_BY_PASSWD_OR_MEMBER_NOT_EXIST(HttpStatus.UNAUTHORIZED, "MEMBER4002", "유저 또는 비밀번호가 잘못되었습니다."),
+
+    EMAIL_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "ENAIL4001", "이메일 전송에 실패했습니다."),
 
 
     ;

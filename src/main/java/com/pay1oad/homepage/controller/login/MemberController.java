@@ -11,6 +11,7 @@ import com.pay1oad.homepage.security.TokenProvider;
 import com.pay1oad.homepage.service.login.JwtRedisService;
 import com.pay1oad.homepage.service.login.MemberService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -27,20 +28,18 @@ import java.util.Objects;
 @CrossOrigin(origins = "http://localhost:3000")
 @Slf4j
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/auth")
 public class MemberController {
 
-    @Autowired
-    private MemberService memberService;
+    private final MemberService memberService;
 
-    @Autowired
-    private TokenProvider tokenProvider;
+    private final TokenProvider tokenProvider;
 
     @Autowired
     ApplicationEventPublisher applicationEventPublisher;
 
-    @Autowired
-    private JwtRedisService jwtRedisService;
+    private final JwtRedisService jwtRedisService;
 
 
 

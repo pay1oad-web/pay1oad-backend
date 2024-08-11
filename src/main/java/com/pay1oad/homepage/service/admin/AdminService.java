@@ -8,6 +8,7 @@ import com.pay1oad.homepage.persistence.login.MemberRepository;
 import com.pay1oad.homepage.response.code.status.ErrorStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AdminService {
 
+    @Autowired
     private final MemberRepository memberRepository;
 
     public void changeMemberAuth(AdminRequestDTO.ToChangeMemberAuthDTO toChangeMemberAuthDTO){
