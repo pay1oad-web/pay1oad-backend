@@ -28,8 +28,8 @@ import java.util.Base64;
 
 @Slf4j
 @Controller
+@RequiredArgsConstructor
 public class EmailVerificationController {
-    @Autowired
     private final EmailVerificationService verificationService;
     private final MemberService memberService;
     private final EmailService emailService;
