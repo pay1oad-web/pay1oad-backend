@@ -6,6 +6,7 @@ import com.pay1oad.homepage.dto.admin.AdminRequestDTO;
 import com.pay1oad.homepage.service.admin.AdminService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
