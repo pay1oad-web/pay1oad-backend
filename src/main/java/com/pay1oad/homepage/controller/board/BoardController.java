@@ -1,21 +1,12 @@
 package com.pay1oad.homepage.controller.board;
 
-import com.pay1oad.homepage.model.board.Category;
+import com.pay1oad.homepage.dto.board.*;
+import com.pay1oad.homepage.model.login.Member;
 import com.pay1oad.homepage.security.TokenProvider;
 import com.pay1oad.homepage.service.board.BoardService;
-import com.pay1oad.homepage.dto.board.BoardUpdateDTO;
-import com.pay1oad.homepage.dto.board.BoardWriteDTO;
-import com.pay1oad.homepage.dto.board.SearchDTO;
-import com.pay1oad.homepage.dto.board.ResBoardDetailsDTO;
-import com.pay1oad.homepage.dto.board.ResBoardListDTO;
-import com.pay1oad.homepage.dto.board.ResBoardWriteDTO;
-import com.pay1oad.homepage.model.login.Member;
-
 import com.pay1oad.homepage.service.login.MemberService;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -32,12 +23,8 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class BoardController {
     private final BoardService boardService;
-
-    @Autowired
-    private TokenProvider tokenProvider;
-
-    @Autowired
-    private MemberService memberService;
+    private final TokenProvider tokenProvider;
+    private final MemberService memberService;
 
     // 페이징 목록
     @GetMapping("/list")
@@ -53,7 +40,6 @@ public class BoardController {
             @RequestBody SearchDTO searchDTO,
             @PageableDefault(size = 5, sort = "id", direction = Sort.Direction.DESC) Pageable pageable,
             @AuthenticationPrincipal Member member) {
-        // 로그인한 사용자가 검색 조건을 제공하지 않았을 경우, 자신의 정보로 채움
         if (searchDTO.getUsername() == null || searchDTO.getUsername().isEmpty()) {
             searchDTO.setUsername(member.getUsername());
         }
@@ -61,18 +47,17 @@ public class BoardController {
         return ResponseEntity.status(HttpStatus.OK).body(searchResults);
     }
 
-    @PostMapping("/write")
+    @PostMapping("/{categoryId}/write")
     public ResponseEntity<ResBoardWriteDTO> write(
             @RequestBody BoardWriteDTO boardDTO,
             @RequestHeader("Authorization") String authorizationHeader,
-            @RequestParam Long categoryId){
+            @PathVariable Long categoryId) {
         String token = null;
-
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             token = authorizationHeader.substring(7);
         }
-        int userid= Integer.parseInt(tokenProvider.validateAndGetUserId(token));
-        Member member=memberService.getMemberByID(userid);
+        int userid = Integer.parseInt(tokenProvider.validateAndGetUserId(token));
+        Member member = memberService.getMemberByID(userid);
 
         ResBoardWriteDTO saveBoardDTO = boardService.write(boardDTO, member, categoryId);
         return ResponseEntity.status(HttpStatus.CREATED).body(saveBoardDTO);
@@ -118,5 +103,44 @@ public class BoardController {
             @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
         Page<ResBoardListDTO> boards = boardService.getBoardsByCategory(categoryId, pageable);
         return ResponseEntity.status(HttpStatus.OK).body(boards);
+    }
+
+    // 좋아요 추가
+    @PostMapping("/{boardId}/like")
+    public ResponseEntity<Void> addLike(
+            @PathVariable Long boardId,
+            @RequestHeader("Authorization") String authorizationHeader) {
+        String token = null;
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            token = authorizationHeader.substring(7);
+        }
+        int userid = Integer.parseInt(tokenProvider.validateAndGetUserId(token));
+        Member member = memberService.getMemberByID(userid);
+
+        boardService.addLike(boardId, member);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    // 좋아요 취소
+    @DeleteMapping("/{boardId}/like")
+    public ResponseEntity<Void> removeLike(
+            @PathVariable Long boardId,
+            @RequestHeader("Authorization") String authorizationHeader) {
+        String token = null;
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            token = authorizationHeader.substring(7);
+        }
+        int userid = Integer.parseInt(tokenProvider.validateAndGetUserId(token));
+        Member member = memberService.getMemberByID(userid);
+
+        boardService.removeLike(boardId, member);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    // 좋아요 개수 조회
+    @GetMapping("/{boardId}/like-count")
+    public ResponseEntity<Integer> getLikeCount(@PathVariable Long boardId) {
+        int likeCount = boardService.getLikeCount(boardId);
+        return ResponseEntity.status(HttpStatus.OK).body(likeCount);
     }
 }

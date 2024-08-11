@@ -3,7 +3,9 @@ package com.pay1oad.homepage.service.board;
 import com.pay1oad.homepage.config.ResourceNotFoundException;
 import jakarta.transaction.Transactional;
 import com.pay1oad.homepage.model.board.Board;
+import com.pay1oad.homepage.model.board.Like;
 import com.pay1oad.homepage.persistence.board.BoardRepository;
+import com.pay1oad.homepage.persistence.board.LikeRepository;
 import com.pay1oad.homepage.dto.board.BoardUpdateDTO;
 import com.pay1oad.homepage.dto.board.BoardWriteDTO;
 import com.pay1oad.homepage.dto.board.SearchDTO;
@@ -15,7 +17,6 @@ import com.pay1oad.homepage.persistence.login.MemberRepository;
 import com.pay1oad.homepage.model.board.Category;
 import com.pay1oad.homepage.persistence.board.CategoryRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -33,6 +34,8 @@ public class BoardService {
 
     private final BoardRepository boardRepository;
     private final MemberRepository memberRepository;
+    private final LikeRepository likeRepository;  // 추가: LikeRepository 주입
+    private final CategoryRepository categoryRepository;
 
     // 페이징 리스트
     public Page<ResBoardListDTO> getAllBoards(Pageable pageable) {
@@ -96,8 +99,6 @@ public class BoardService {
                 .orElse(false);
     }
 
-    private final CategoryRepository categoryRepository;
-
     // 카테고리별 게시판 조회 기능
     public Page<ResBoardListDTO> getBoardsByCategory(Long categoryId, Pageable pageable) {
         Category category = categoryRepository.findById(categoryId).orElseThrow(
@@ -124,16 +125,33 @@ public class BoardService {
         return ResBoardWriteDTO.fromEntity(savedBoard, member);
     }
 
-    public Page<ResBoardListDTO> getBoardsByCategoryWithPaging(Long categoryId, Pageable pageable) {
-        Category category = categoryRepository.findById(categoryId).orElseThrow(
-                () -> new ResourceNotFoundException("Category", "Category Id", String.valueOf(categoryId))
+    // 좋아요 추가
+    public void addLike(Long boardId, Member member) {
+        Board board = boardRepository.findById(boardId).orElseThrow(
+                () -> new ResourceNotFoundException("Board", "Board Id", String.valueOf(boardId))
         );
-
-        Page<Board> boards = boardRepository.findByCategory(category, pageable);
-        List<ResBoardListDTO> list = boards.getContent().stream()
-                .map(ResBoardListDTO::fromEntity)
-                .collect(Collectors.toList());
-        return new PageImpl<>(list, pageable, boards.getTotalElements());
+        Like like = new Like(board, member);
+        likeRepository.save(like);
+        board.addLike(like);
     }
 
+    // 좋아요 취소
+    public void removeLike(Long boardId, Member member) {
+        Board board = boardRepository.findById(boardId).orElseThrow(
+                () -> new ResourceNotFoundException("Board", "Board Id", String.valueOf(boardId))
+        );
+        Like like = likeRepository.findByBoardAndMember(board, member).orElseThrow(
+                () -> new ResourceNotFoundException("Like", "Board and Member", "Like not found")
+        );
+        board.removeLike(like);
+        likeRepository.delete(like);
+    }
+
+    // 좋아요 개수 조회
+    public int getLikeCount(Long boardId) {
+        Board board = boardRepository.findById(boardId).orElseThrow(
+                () -> new ResourceNotFoundException("Board", "Board Id", String.valueOf(boardId))
+        );
+        return board.getLikeCount();
+    }
 }

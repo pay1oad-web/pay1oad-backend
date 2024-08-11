@@ -46,6 +46,9 @@ public class Board extends BaseTimeEntity {
     @BatchSize(size = 10)
     public List<FileEntity> files = new ArrayList<>();
 
+    @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Like> likes = new ArrayList<>();
+
     @Builder
     public Board(Long id, String title, String content, int viewCount, Member member, Category category) {
         this.board_id = id;
@@ -81,5 +84,18 @@ public class Board extends BaseTimeEntity {
         if (!category.getBoards().contains(this)) {
             category.getBoards().add(this);
         }
+    }
+
+    // Like
+    public void addLike(Like like) {
+        this.likes.add(like);
+    }
+
+    public void removeLike(Like like) {
+        this.likes.remove(like);
+    }
+
+    public int getLikeCount() {
+        return this.likes.size();
     }
 }
