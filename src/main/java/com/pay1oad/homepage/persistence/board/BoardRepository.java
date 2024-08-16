@@ -14,7 +14,7 @@ import com.pay1oad.homepage.model.board.Board;
 
 public interface BoardRepository extends JpaRepository<Board, Long> {
 
-	@Query(value = "SELECT b FROM Board b JOIN FETCH b.member WHERE b.id = :boardID")
+	@Query(value = "SELECT b FROM Board b JOIN FETCH b.member WHERE b.board_id = :boardID")
 	Optional<Board> findByIdWithMemberAndCommentsAndFiles(@Param("boardID") Long boardID);
 
 	// 첫 페이징 화면("/")

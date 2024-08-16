@@ -125,26 +125,20 @@ public class BoardService {
         return ResBoardWriteDTO.fromEntity(savedBoard, member);
     }
 
-    // 좋아요 추가
-    public void addLike(Long boardId, Member member) {
+    // 좋아요 토글 기능
+    public void toggleLike(Long boardId, Member member) {
         Board board = boardRepository.findById(boardId).orElseThrow(
                 () -> new ResourceNotFoundException("Board", "Board Id", String.valueOf(boardId))
         );
-        Like like = new Like(board, member);
-        likeRepository.save(like);
-        board.addLike(like);
-    }
-
-    // 좋아요 취소
-    public void removeLike(Long boardId, Member member) {
-        Board board = boardRepository.findById(boardId).orElseThrow(
-                () -> new ResourceNotFoundException("Board", "Board Id", String.valueOf(boardId))
-        );
-        Like like = likeRepository.findByBoardAndMember(board, member).orElseThrow(
-                () -> new ResourceNotFoundException("Like", "Board and Member", "Like not found")
-        );
-        board.removeLike(like);
-        likeRepository.delete(like);
+        Like existingLike  = likeRepository.findByBoardAndMember(board, member).orElse(null);
+        if (existingLike != null) {
+            board.removeLike(existingLike);
+            likeRepository.delete(existingLike);
+        } else {
+            Like like = new Like(board, member);
+            likeRepository.save(like);
+            board.addLike(like);
+        }
     }
 
     // 좋아요 개수 조회

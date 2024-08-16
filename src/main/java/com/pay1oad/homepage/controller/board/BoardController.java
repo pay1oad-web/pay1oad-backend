@@ -34,7 +34,7 @@ public class BoardController {
         return ResponseEntity.status(HttpStatus.OK).body(listDTO);
     }
 
-    // 페이징 검색, Get 요청 @RequestBody 사용할 수 없음
+    // 페이징 검색
     @PostMapping("/search")
     public ResponseEntity<Page<ResBoardListDTO>> search(
             @RequestBody SearchDTO searchDTO,
@@ -69,7 +69,7 @@ public class BoardController {
         return ResponseEntity.status(HttpStatus.OK).body(findBoardDTO);
     }
 
-    // 상세보기 -> 수정
+    // 상세보기
     @PatchMapping("/{boardId}/update")
     public ResponseEntity<ResBoardDetailsDTO> update(
             @PathVariable("boardId") Long boardId,
@@ -105,36 +105,19 @@ public class BoardController {
         return ResponseEntity.status(HttpStatus.OK).body(boards);
     }
 
-    // 좋아요 추가
+    // 좋아요 토글 기능
     @PostMapping("/{boardId}/like")
-    public ResponseEntity<Void> addLike(
+    public ResponseEntity<Void> toggleLike(
             @PathVariable Long boardId,
-            @RequestHeader("Authorization") String authorizationHeader) {
+            @RequestHeader("Authorization") String authorizationHeader){
         String token = null;
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             token = authorizationHeader.substring(7);
         }
         int userid = Integer.parseInt(tokenProvider.validateAndGetUserId(token));
         Member member = memberService.getMemberByID(userid);
-
-        boardService.addLike(boardId, member);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
-    }
-
-    // 좋아요 취소
-    @DeleteMapping("/{boardId}/like")
-    public ResponseEntity<Void> removeLike(
-            @PathVariable Long boardId,
-            @RequestHeader("Authorization") String authorizationHeader) {
-        String token = null;
-        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            token = authorizationHeader.substring(7);
-        }
-        int userid = Integer.parseInt(tokenProvider.validateAndGetUserId(token));
-        Member member = memberService.getMemberByID(userid);
-
-        boardService.removeLike(boardId, member);
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+        boardService.toggleLike(boardId, member);
+        return ResponseEntity.status(HttpStatus.OK).build();
     }
 
     // 좋아요 개수 조회

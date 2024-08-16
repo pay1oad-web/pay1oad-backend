@@ -50,8 +50,8 @@ public class Board extends BaseTimeEntity {
     private List<Like> likes = new ArrayList<>();
 
     @Builder
-    public Board(Long id, String title, String content, int viewCount, Member member, Category category) {
-        this.board_id = id;
+    public Board(Long board_id, String title, String content, int viewCount, Member member, Category category) {
+        this.board_id = board_id;
         this.title = title;
         this.content = content;
         this.viewCount = viewCount;
