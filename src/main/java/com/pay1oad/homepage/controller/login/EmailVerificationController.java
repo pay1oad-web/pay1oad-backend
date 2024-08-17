@@ -5,6 +5,7 @@ package com.pay1oad.homepage.controller.login;
 import com.pay1oad.homepage.dto.login.MemberDTO;
 import com.pay1oad.homepage.exception.CustomException;
 import com.pay1oad.homepage.model.login.Member;
+import com.pay1oad.homepage.model.login.MemberAuth;
 import com.pay1oad.homepage.persistence.login.MemberRepository;
 import com.pay1oad.homepage.response.code.status.ErrorStatus;
 import com.pay1oad.homepage.security.JwtUtils;
@@ -42,10 +43,13 @@ public class EmailVerificationController {
             String username = jwtUtils.getAccountIdFromRequest(authorizationHeader);
             String verificationId = verificationService.generateVerification(username);
             Member member = memberRepository.findByUsername(username);
+            if(!member.getMemberAuth().equals(MemberAuth.UNAUTH)){
+                return ResponseEntity.ok().body("Already Authorized.");
+            }
             emailService.sendVerificationEmail(username, member.getEmail(), verificationId);
             return ResponseEntity.ok().body("Email Succesfuly Send.");
         } catch (NoSuchAlgorithmException e) {
-            log.error("인증 이메일 전송 실패", e);
+            log.error("Email send Failed.", e);
             throw new CustomException(ErrorStatus.EMAIL_SEND_FAILED);
         }
     }
@@ -61,8 +65,14 @@ public class EmailVerificationController {
                 Member member = memberService.checkID(username);
                 if (member != null) {
                     member.setVerified(true);
-                    memberService.save(member);
-                    return "인증 이메일이 성공적으로 전송되었습니다.";
+                    if(member.getMemberAuth().equals(MemberAuth.UNAUTH)){
+                        member.setMemberAuth(MemberAuth.MEMBER);
+                        memberService.save(member);
+                        return "Email Verification Success";
+                    }else{
+                        return "Email Verification Already Success";
+                    }
+
                     //return "redirect:/success";
                 }
             }

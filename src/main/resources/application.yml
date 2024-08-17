@@ -39,3 +39,6 @@ spring:
 
 project:
   folderPath: /upload
+
+jwt:
+  secret: ${JWT_SECRET};

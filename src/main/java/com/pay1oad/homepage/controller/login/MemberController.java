@@ -140,13 +140,12 @@ public class MemberController {
 
             //log.info("userid in signout: "+userid);
             if(!Objects.equals(userid, "anonymousUser")){
-                String username=memberService.getUsername(Integer.valueOf(userid));
-                log.info("username in signout: "+username.replaceAll("[\r\n]",""));
+//                log.info("username in signout: "+username.replaceAll("[\r\n]",""));
 
                 //logout
-                jwtRedisService.deleteValues(username);
+                jwtRedisService.deleteValues(userid);
 
-                return "signed out: "+username;
+                return "signed out: "+userid;
             }else{
                 return "anonymousUser";
             }
