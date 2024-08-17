@@ -14,8 +14,8 @@ public class SwaggerConfig {
     @Bean
     public OpenAPI openAPI() {
         Info info = new Info()
-                .title("PARKING LOTTO API")
-                .description("PARKING LOTTO API 명세서")
+                .title("Pay1oad API")
+                .description("Pay1oad API 명세서")
                 .version("1.0.0");
         String jwtSchemeName = "JWT TOKEN";
         SecurityRequirement securityRequirement = new SecurityRequirement().addList(jwtSchemeName);
