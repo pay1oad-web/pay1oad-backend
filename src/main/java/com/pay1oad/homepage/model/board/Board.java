@@ -22,7 +22,7 @@ public class Board extends BaseTimeEntity {
     @Column(name = "board_id")
     private Long board_id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 100)
     private String title;
 
     private String content;
@@ -34,6 +34,10 @@ public class Board extends BaseTimeEntity {
     @JoinColumn(name = "userid")
     private Member member;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private Category category;
+
     @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @BatchSize(size = 10)
     private List<Comment> comments = new ArrayList<>();
@@ -42,13 +46,17 @@ public class Board extends BaseTimeEntity {
     @BatchSize(size = 10)
     public List<FileEntity> files = new ArrayList<>();
 
+    @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Like> likes = new ArrayList<>();
+
     @Builder
-    public Board(Long id, String title, String content, int viewCount, Member member) {
-        this.board_id = id;
+    public Board(Long board_id, String title, String content, int viewCount, Member member, Category category) {
+        this.board_id = board_id;
         this.title = title;
         this.content = content;
         this.viewCount = viewCount;
         this.member = member;
+        this.category = category;
     }
 
     // 조회수 증가
@@ -68,5 +76,26 @@ public class Board extends BaseTimeEntity {
         if (!member.getBoards().contains(this)) {
             member.getBoards().add(this);
         }
+    }
+
+    // Category & Board 연관관계 편의 메소드
+    public void setCategory(Category category) {
+        this.category = category;
+        if (!category.getBoards().contains(this)) {
+            category.getBoards().add(this);
+        }
+    }
+
+    // Like
+    public void addLike(Like like) {
+        this.likes.add(like);
+    }
+
+    public void removeLike(Like like) {
+        this.likes.remove(like);
+    }
+
+    public int getLikeCount() {
+        return this.likes.size();
     }
 }

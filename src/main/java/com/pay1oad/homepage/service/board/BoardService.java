@@ -3,7 +3,9 @@ package com.pay1oad.homepage.service.board;
 import com.pay1oad.homepage.config.ResourceNotFoundException;
 import jakarta.transaction.Transactional;
 import com.pay1oad.homepage.model.board.Board;
+import com.pay1oad.homepage.model.board.Like;
 import com.pay1oad.homepage.persistence.board.BoardRepository;
+import com.pay1oad.homepage.persistence.board.LikeRepository;
 import com.pay1oad.homepage.dto.board.BoardUpdateDTO;
 import com.pay1oad.homepage.dto.board.BoardWriteDTO;
 import com.pay1oad.homepage.dto.board.SearchDTO;
@@ -12,8 +14,9 @@ import com.pay1oad.homepage.dto.board.ResBoardListDTO;
 import com.pay1oad.homepage.dto.board.ResBoardWriteDTO;
 import com.pay1oad.homepage.model.login.Member;
 import com.pay1oad.homepage.persistence.login.MemberRepository;
+import com.pay1oad.homepage.model.board.Category;
+import com.pay1oad.homepage.persistence.board.CategoryRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -31,6 +34,8 @@ public class BoardService {
 
     private final BoardRepository boardRepository;
     private final MemberRepository memberRepository;
+    private final LikeRepository likeRepository;  // 추가: LikeRepository 주입
+    private final CategoryRepository categoryRepository;
 
     // 페이징 리스트
     public Page<ResBoardListDTO> getAllBoards(Pageable pageable) {
@@ -92,5 +97,55 @@ public class BoardService {
         return boardRepository.findById(boardId)
                 .map(board -> board.getMember().getUsername().equals(username))
                 .orElse(false);
+    }
+
+    // 카테고리별 게시판 조회 기능
+    public Page<ResBoardListDTO> getBoardsByCategory(Long categoryId, Pageable pageable) {
+        Category category = categoryRepository.findById(categoryId).orElseThrow(
+                () -> new ResourceNotFoundException("Category", "Category Id", String.valueOf(categoryId))
+        );
+
+        Page<Board> boards = boardRepository.findByCategory(category, pageable);
+        List<ResBoardListDTO> list = boards.getContent().stream()
+                .map(ResBoardListDTO::fromEntity)
+                .collect(Collectors.toList());
+        return new PageImpl<>(list, pageable, boards.getTotalElements());
+    }
+
+    // 카테고리 지정
+    public ResBoardWriteDTO write(BoardWriteDTO boardDTO, Member member, Long categoryId) {
+        Category category = categoryRepository.findById(categoryId).orElseThrow(
+                () -> new ResourceNotFoundException("Category", "Category Id", String.valueOf(categoryId))
+        );
+
+        Board board = BoardWriteDTO.ofEntity(boardDTO);
+        board.setMember(member);
+        board.setCategory(category);  // 카테고리 설정
+        Board savedBoard = boardRepository.save(board);
+        return ResBoardWriteDTO.fromEntity(savedBoard, member);
+    }
+
+    // 좋아요 토글 기능
+    public void toggleLike(Long boardId, Member member) {
+        Board board = boardRepository.findById(boardId).orElseThrow(
+                () -> new ResourceNotFoundException("Board", "Board Id", String.valueOf(boardId))
+        );
+        Like existingLike  = likeRepository.findByBoardAndMember(board, member).orElse(null);
+        if (existingLike != null) {
+            board.removeLike(existingLike);
+            likeRepository.delete(existingLike);
+        } else {
+            Like like = new Like(board, member);
+            likeRepository.save(like);
+            board.addLike(like);
+        }
+    }
+
+    // 좋아요 개수 조회
+    public int getLikeCount(Long boardId) {
+        Board board = boardRepository.findById(boardId).orElseThrow(
+                () -> new ResourceNotFoundException("Board", "Board Id", String.valueOf(boardId))
+        );
+        return board.getLikeCount();
     }
 }
