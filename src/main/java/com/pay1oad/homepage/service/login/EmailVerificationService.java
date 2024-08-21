@@ -9,6 +9,8 @@ import java.util.Optional;
 
 @Service
 public class EmailVerificationService {
+
+    @Autowired
     private final EmailVerificationRepository emailVerificationRepository;
 
     @Autowired
