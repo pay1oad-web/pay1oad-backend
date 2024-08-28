@@ -64,11 +64,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 String userID = tokenProvider.validateAndGetUserId(token);
                 String username = memberService.getUsername(Integer.valueOf(userID));
-                if (Objects.equals(jwtRedisService.getValues(username), token)) {
+                if (Objects.equals(jwtRedisService.getValues("access_" + username), token)) {
                     // Load user details to get authorities
                     UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-
-
+                    
                     if (userDetails != null) {
                         AbstractAuthenticationToken authentication = (AbstractAuthenticationToken) tokenProvider.getAuthentication(userDetails);
                         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
@@ -89,10 +88,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    private String parseBearerToken(HttpServletRequest request){
-        String bearerToken=request.getHeader("Authorization");
+    private String parseBearerToken(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
 
-        if(StringUtils.hasText(bearerToken)&&bearerToken.startsWith("Bearer ")){
+        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
         }
         return null;
