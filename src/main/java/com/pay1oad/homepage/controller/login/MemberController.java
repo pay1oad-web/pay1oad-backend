@@ -7,10 +7,13 @@ import com.pay1oad.homepage.dto.ResponseDTO;
 //import com.pay1oad.homepage.event.UserRegistrationEvent;
 import com.pay1oad.homepage.exception.CustomException;
 import com.pay1oad.homepage.model.login.Member;
+import com.pay1oad.homepage.persistence.login.MemberRepository;
 import com.pay1oad.homepage.response.code.status.ErrorStatus;
+import com.pay1oad.homepage.security.JwtUtils;
 import com.pay1oad.homepage.security.TokenProvider;
 import com.pay1oad.homepage.service.login.JwtRedisService;
 import com.pay1oad.homepage.service.login.MemberService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +45,9 @@ public class MemberController {
 
     private final JwtRedisService jwtRedisService;
 
+    private final JwtUtils jwtUtils;
+
+    private final MemberRepository memberRepository;
 
 
     /*private final JavaMailSender mailSender;
@@ -105,14 +111,14 @@ public class MemberController {
 
             //redis
 
-            //Already signed in
+            //Delete exist refresh Token
             if(jwtRedisService.getValues(signInDTO.getUserName())!=null){
                 jwtRedisService.deleteValues(signInDTO.getUserName());
             }
 
             //add logged in list
-            jwtRedisService.setValues("access_"+member.getUsername(), token.getAccessToken(), Duration.ofSeconds(600));
-            jwtRedisService.setValues("refresh_"+member.getUsername(), token.getRefreshToken(), Duration.ofHours(60));
+//            jwtRedisService.setValues("access_"+member.getUsername(), token.getAccessToken(), Duration.ofSeconds(600));
+            jwtRedisService.setValues(member.getUsername(), token.getRefreshToken(), Duration.ofHours(60));
 
             return ResponseEntity.ok().body(responseMemberDTO);
         }else{
@@ -122,7 +128,7 @@ public class MemberController {
     }
 
     @PostMapping("/signout")
-    public String signout(){
+    public String signout(HttpServletRequest httpServletRequest){
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null) {
@@ -143,10 +149,12 @@ public class MemberController {
             if(!Objects.equals(userid, "anonymousUser")){
 //                log.info("username in signout: "+username.replaceAll("[\r\n]",""));
 
-                //logout
+                //logout -> redis에서 refresh token 제거 및 access token 블랙리스트로
                 jwtRedisService.deleteValues(userid);
 
-
+                String accessToken = jwtUtils.getToken(httpServletRequest);
+                Long expiration = tokenProvider.getExpiration(accessToken);
+                jwtRedisService.setBlackList(accessToken, "access_token", expiration);
 
                 return "signed out: "+userid;
             }else{
@@ -163,28 +171,34 @@ public class MemberController {
     }
 
     @PostMapping("/refreshToken")
-    public String refresh(@RequestHeader("Authorization") String authorizationHeader){
+    public JwtToken refresh(HttpServletRequest httpServletRequest){
         //get token
-        String token = null;
-
-        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            token = authorizationHeader.substring(7);
-        }else{
-            return "Toekn is not valid";
-        }
+        String refreshToken = jwtUtils.getToken(httpServletRequest);
         //log.info("token: "+token);
 
         //get username
-        int userid= Integer.parseInt(tokenProvider.validateAndGetUserId(token));
+        int userid= Integer.parseInt(tokenProvider.validateAndGetUserId(refreshToken));
         String username=memberService.getUsername(userid);
 
+        if (Objects.equals(jwtRedisService.getValues(username), refreshToken)) {
+            log.info("Refreshed: "+username.replaceAll("[\r\n]",""));
 
-        log.info("Refreshed: "+username.replaceAll("[\r\n]",""));
+            jwtRedisService.deleteValues(username);
 
-        //refresh
-        jwtRedisService.setValues(username, token, Duration.ofSeconds(600));
+            //member 객체
+            Member member = memberService.getMemberByID(userid);
 
-        return "refreshed: "+username;
+            final JwtToken token=tokenProvider.create(member);
+
+            //refresh
+            jwtRedisService.setValues(username, token.getRefreshToken(), Duration.ofDays(3));
+
+            return token;
+
+
+        }else{
+            throw new CustomException(ErrorStatus.REFRESH_TOKEN_NOT_VALID);
+        }
 
     }
 

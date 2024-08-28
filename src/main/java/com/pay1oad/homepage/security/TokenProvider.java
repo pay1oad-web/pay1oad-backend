@@ -83,7 +83,6 @@ public class TokenProvider {
                 null,
                 userDetails.getAuthorities()
         );
-
     }
 
     public Claims parseClaims(String accessToken) {
@@ -96,6 +95,21 @@ public class TokenProvider {
         } catch (ExpiredJwtException e) {
             return e.getClaims();
         }
+    }
+
+    public Long getExpiration(String accessToken) {
+        Claims claims = Jwts.parser()
+                .setSigningKey(secret_key)  // Make sure to use the same secret key used for signing
+                .parseClaimsJws(accessToken)
+                .getBody();
+
+        Date expirationDate = claims.getExpiration();
+
+        Date currentDate = new Date();
+
+        long differenceInMilliseconds = expirationDate.getTime() - currentDate.getTime();
+
+        return differenceInMilliseconds;
     }
 
 }

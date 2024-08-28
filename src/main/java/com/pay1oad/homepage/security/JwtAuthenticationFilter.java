@@ -45,7 +45,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-        String[] excludePath = {"/auth/signup", "/auth/signin", "/verify/email"};
+        String[] excludePath = {"/auth/signup", "/auth/signin", "/verify/email", "/auth/refreshToken"};
         // 제외할 url 설정
         String path = request.getRequestURI();
         return Arrays.stream(excludePath).anyMatch(path::startsWith);
@@ -64,7 +64,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 String userID = tokenProvider.validateAndGetUserId(token);
                 String username = memberService.getUsername(Integer.valueOf(userID));
-                if (Objects.equals(jwtRedisService.getValues("access_" + username), token)) {
+                if (!jwtRedisService.hasKeyBlackList(token)) {
                     // Load user details to get authorities
                     UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 

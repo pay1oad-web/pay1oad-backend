@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 public class JwtRedisService {
     private final JwtRedisRepository jwtRedisRepository;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<String, Object> redisBlackListTemplate;
 
     public void setValues(String key, String data) {
         ValueOperations<String, Object> values = redisTemplate.opsForValue();
@@ -67,4 +69,21 @@ public class JwtRedisService {
         return !value.equals("false");
     }
 
+
+    public void setBlackList(String key, Object o, Long milliSeconds) {
+        redisBlackListTemplate.setValueSerializer(new Jackson2JsonRedisSerializer(o.getClass()));
+        redisBlackListTemplate.opsForValue().set(key, o, milliSeconds, TimeUnit.MILLISECONDS);
+    }
+
+    public Object getBlackList(String key) {
+        return redisBlackListTemplate.opsForValue().get(key);
+    }
+
+    public boolean deleteBlackList(String key) {
+        return redisBlackListTemplate.delete(key);
+    }
+
+    public boolean hasKeyBlackList(String key) {
+        return redisBlackListTemplate.hasKey(key);
+    }
 }
