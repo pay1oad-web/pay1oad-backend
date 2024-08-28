@@ -25,7 +25,7 @@ public class FileEntity extends BaseTimeEntity {
     @Column(name = "ORIGIN_FILE_NAME")
     private String originFileName;
 
-    @Column(name = "FILE_TYPE")
+    @Column(name = "FILE_TYPE", nullable = false)
     private String fileType;
 
     @Column(name = "FILE_PATH")

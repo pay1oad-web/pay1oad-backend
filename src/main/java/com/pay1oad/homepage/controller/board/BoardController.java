@@ -1,19 +1,12 @@
 package com.pay1oad.homepage.controller.board;
 
+import com.pay1oad.homepage.dto.board.*;
+import com.pay1oad.homepage.model.login.Member;
 import com.pay1oad.homepage.security.TokenProvider;
 import com.pay1oad.homepage.service.board.BoardService;
-import com.pay1oad.homepage.dto.board.BoardUpdateDTO;
-import com.pay1oad.homepage.dto.board.BoardWriteDTO;
-import com.pay1oad.homepage.dto.board.SearchDTO;
-import com.pay1oad.homepage.dto.board.ResBoardDetailsDTO;
-import com.pay1oad.homepage.dto.board.ResBoardListDTO;
-import com.pay1oad.homepage.dto.board.ResBoardWriteDTO;
-import com.pay1oad.homepage.model.login.Member;
-
 import com.pay1oad.homepage.service.login.MemberService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -30,12 +23,8 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class BoardController {
     private final BoardService boardService;
-
-    @Autowired
-    private TokenProvider tokenProvider;
-
-    @Autowired
-    private MemberService memberService;
+    private final TokenProvider tokenProvider;
+    private final MemberService memberService;
 
     // 페이징 목록
     @GetMapping("/list")
@@ -45,13 +34,12 @@ public class BoardController {
         return ResponseEntity.status(HttpStatus.OK).body(listDTO);
     }
 
-    // 페이징 검색, Get 요청 @RequestBody 사용할 수 없음
+    // 페이징 검색
     @PostMapping("/search")
     public ResponseEntity<Page<ResBoardListDTO>> search(
             @RequestBody SearchDTO searchDTO,
             @PageableDefault(size = 5, sort = "id", direction = Sort.Direction.DESC) Pageable pageable,
             @AuthenticationPrincipal Member member) {
-        // 로그인한 사용자가 검색 조건을 제공하지 않았을 경우, 자신의 정보로 채움
         if (searchDTO.getUsername() == null || searchDTO.getUsername().isEmpty()) {
             searchDTO.setUsername(member.getUsername());
         }
@@ -59,19 +47,19 @@ public class BoardController {
         return ResponseEntity.status(HttpStatus.OK).body(searchResults);
     }
 
-    @PostMapping("/write")
+    @PostMapping("/{categoryId}/write")
     public ResponseEntity<ResBoardWriteDTO> write(
             @RequestBody BoardWriteDTO boardDTO,
-            @RequestHeader("Authorization") String authorizationHeader) {
+            @RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable Long categoryId) {
         String token = null;
-
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             token = authorizationHeader.substring(7);
         }
-        int userid= Integer.parseInt(tokenProvider.validateAndGetUserId(token));
-        Member member=memberService.getMemberByID(userid);
+        int userid = Integer.parseInt(tokenProvider.validateAndGetUserId(token));
+        Member member = memberService.getMemberByID(userid);
 
-        ResBoardWriteDTO saveBoardDTO = boardService.write(boardDTO, member);
+        ResBoardWriteDTO saveBoardDTO = boardService.write(boardDTO, member, categoryId);
         return ResponseEntity.status(HttpStatus.CREATED).body(saveBoardDTO);
     }
 
@@ -81,7 +69,7 @@ public class BoardController {
         return ResponseEntity.status(HttpStatus.OK).body(findBoardDTO);
     }
 
-    // 상세보기 -> 수정
+    // 상세보기
     @PatchMapping("/{boardId}/update")
     public ResponseEntity<ResBoardDetailsDTO> update(
             @PathVariable("boardId") Long boardId,
@@ -96,7 +84,7 @@ public class BoardController {
     }
 
     // 게시글 삭제
-    @DeleteMapping("/{boardId}/delete")
+    @DeleteMapping("/{boardId}")
     public ResponseEntity<?> delete(
             @PathVariable("boardId") Long boardId,
             @AuthenticationPrincipal Member member) {
@@ -106,5 +94,36 @@ public class BoardController {
         }
         boardService.delete(boardId);
         return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+    // 카테고리별 게시글 조회
+    @GetMapping("/category/{categoryId}/list")
+    public ResponseEntity<Page<ResBoardListDTO>> getBoardsByCategory(
+            @PathVariable Long categoryId,
+            @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
+        Page<ResBoardListDTO> boards = boardService.getBoardsByCategory(categoryId, pageable);
+        return ResponseEntity.status(HttpStatus.OK).body(boards);
+    }
+
+    // 좋아요 토글 기능
+    @PostMapping("/{boardId}/like")
+    public ResponseEntity<Void> toggleLike(
+            @PathVariable Long boardId,
+            @RequestHeader("Authorization") String authorizationHeader){
+        String token = null;
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            token = authorizationHeader.substring(7);
+        }
+        int userid = Integer.parseInt(tokenProvider.validateAndGetUserId(token));
+        Member member = memberService.getMemberByID(userid);
+        boardService.toggleLike(boardId, member);
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+    // 좋아요 개수 조회
+    @GetMapping("/{boardId}/like-count")
+    public ResponseEntity<Integer> getLikeCount(@PathVariable Long boardId) {
+        int likeCount = boardService.getLikeCount(boardId);
+        return ResponseEntity.status(HttpStatus.OK).body(likeCount);
     }
 }
