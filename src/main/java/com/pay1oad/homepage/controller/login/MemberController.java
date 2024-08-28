@@ -8,7 +8,9 @@ import com.pay1oad.homepage.dto.ResponseDTO;
 import com.pay1oad.homepage.exception.CustomException;
 import com.pay1oad.homepage.model.login.Member;
 import com.pay1oad.homepage.persistence.login.MemberRepository;
+import com.pay1oad.homepage.response.ResForm;
 import com.pay1oad.homepage.response.code.status.ErrorStatus;
+import com.pay1oad.homepage.response.code.status.InSuccess;
 import com.pay1oad.homepage.security.JwtUtils;
 import com.pay1oad.homepage.security.TokenProvider;
 import com.pay1oad.homepage.service.login.JwtRedisService;
@@ -97,37 +99,9 @@ public class MemberController {
 
     @Operation(summary = "로그인 API", description = "username, passwd를 입력하세요. 나머지 DTO 형식은 무시해도 됩니다.")
     @PostMapping("/signin")
-    public ResponseEntity<?> authenticate(@Valid @RequestBody LoginRequestDTO.toSignInDTO signInDTO){
-        Member member=memberService.getByCredentials(
-                signInDTO.getUserName(),
-                signInDTO.getPasswd());
-
-        //log.info(memberDTO.getUsername()+"\n"+memberDTO.getPasswd()+"\n");
-        if(member!=null){
-            final JwtToken token=tokenProvider.create(member);
-            final MemberDTO responseMemberDTO = MemberDTO.builder()
-                    .username(member.getUsername())
-                    .userid(String.valueOf(member.getUserid()))
-                    .email(member.getEmail())
-                    .token(String.valueOf(token))
-                    .build();
-
-            //redis
-
-            //Delete exist refresh Token
-            if(jwtRedisService.getValues(signInDTO.getUserName())!=null){
-                jwtRedisService.deleteValues(signInDTO.getUserName());
-            }
-
-            //add logged in list
-//            jwtRedisService.setValues("access_"+member.getUsername(), token.getAccessToken(), Duration.ofSeconds(600));
-            jwtRedisService.setValues(member.getUsername(), token.getRefreshToken(), Duration.ofHours(60));
-
-            return ResponseEntity.ok().body(responseMemberDTO);
-        }else{
-            throw new CustomException(ErrorStatus.LOGIN_FAILED_BY_PASSWD_OR_MEMBER_NOT_EXIST);
-        }
-
+    public ResForm<MemberDTO> authenticate(@Valid @RequestBody LoginRequestDTO.toSignInDTO signInDTO){
+        MemberDTO memberDTO = memberService.signIn(signInDTO);
+        return ResForm.onSuccess(InSuccess.LOGIN_SUCCESS, memberDTO);
     }
 
     @Operation(summary = "로그아웃 API", description = "JWT 토큰으로 해당 유저를 로그아웃 합니다. 서버에서 기존 토큰을 무효화 합니다.")

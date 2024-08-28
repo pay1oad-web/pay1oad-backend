@@ -10,6 +10,8 @@ public enum InSuccess {
 
     _OK(HttpStatus.OK, "COMMON200", "성공입니다."),
 
+    LOGIN_SUCCESS(HttpStatus.OK, "MEMBER2001", "로그인 성공"),
+
     ;
 
     private final HttpStatus httpStatus;
