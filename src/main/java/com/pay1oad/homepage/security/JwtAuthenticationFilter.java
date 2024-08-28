@@ -67,7 +67,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 if (Objects.equals(jwtRedisService.getValues("access_" + username), token)) {
                     // Load user details to get authorities
                     UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                    
+
                     if (userDetails != null) {
                         AbstractAuthenticationToken authentication = (AbstractAuthenticationToken) tokenProvider.getAuthentication(userDetails);
                         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

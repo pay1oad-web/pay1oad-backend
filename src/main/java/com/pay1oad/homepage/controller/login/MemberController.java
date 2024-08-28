@@ -146,6 +146,8 @@ public class MemberController {
                 //logout
                 jwtRedisService.deleteValues(userid);
 
+
+
                 return "signed out: "+userid;
             }else{
                 return "anonymousUser";

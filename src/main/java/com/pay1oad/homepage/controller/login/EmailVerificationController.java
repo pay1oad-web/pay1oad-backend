@@ -12,6 +12,7 @@ import com.pay1oad.homepage.security.JwtUtils;
 import com.pay1oad.homepage.service.email.EmailService;
 import com.pay1oad.homepage.service.login.EmailVerificationService;
 import com.pay1oad.homepage.service.login.MemberService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,9 +39,9 @@ public class EmailVerificationController {
     private final MemberRepository memberRepository;
 
     @GetMapping("/verify/sendmail")
-    public ResponseEntity<?> sendVerificationEmail(@RequestHeader("Authorization") String authorizationHeader) {
+    public ResponseEntity<?> sendVerificationEmail(HttpServletRequest httpServletRequest) {
         try {
-            String username = jwtUtils.getAccountIdFromRequest(authorizationHeader);
+            String username = jwtUtils.getAccountIdFromRequest(httpServletRequest);
             String verificationId = verificationService.generateVerification(username);
             Member member = memberRepository.findByUsername(username);
             if(!member.getMemberAuth().equals(MemberAuth.UNAUTH)){
