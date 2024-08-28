@@ -4,6 +4,7 @@ import com.pay1oad.homepage.model.login.Member;
 import com.pay1oad.homepage.service.login.CustomUserDetailsService;
 import com.pay1oad.homepage.service.login.JwtRedisService;
 import com.pay1oad.homepage.service.login.MemberService;
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -44,7 +45,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-        String[] excludePath = {"/auth/signup", "/auth/signin", "/verify/email"};
+        String[] excludePath = {"/auth/signup", "/auth/signin", "/verify/email", "/auth/refreshToken"};
         // 제외할 url 설정
         String path = request.getRequestURI();
         return Arrays.stream(excludePath).anyMatch(path::startsWith);
@@ -55,17 +56,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String token = parseBearerToken(request);
             if (token != null && !token.equalsIgnoreCase("null")) {
+
+                Claims claims = tokenProvider.parseClaims(token);
+                if (claims.get("auth") == null) {
+                    throw new RuntimeException("권한 정보가 없는 토큰입니다.");
+                }
+
                 String userID = tokenProvider.validateAndGetUserId(token);
                 String username = memberService.getUsername(Integer.valueOf(userID));
-                if (Objects.equals(jwtRedisService.getValues(username), token)) {
+                if (!jwtRedisService.hasKeyBlackList(token)) {
                     // Load user details to get authorities
                     UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
                     if (userDetails != null) {
-                        AbstractAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                                userDetails.getUsername(),
-                                null,
-                                userDetails.getAuthorities()
-                        );
+                        AbstractAuthenticationToken authentication = (AbstractAuthenticationToken) tokenProvider.getAuthentication(userDetails);
                         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                         SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
                         securityContext.setAuthentication(authentication);
@@ -84,10 +88,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    private String parseBearerToken(HttpServletRequest request){
-        String bearerToken=request.getHeader("Authorization");
+    private String parseBearerToken(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
 
-        if(StringUtils.hasText(bearerToken)&&bearerToken.startsWith("Bearer ")){
+        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
         }
         return null;
