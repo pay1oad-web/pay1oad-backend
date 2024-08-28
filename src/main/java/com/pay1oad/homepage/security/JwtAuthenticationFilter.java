@@ -4,6 +4,7 @@ import com.pay1oad.homepage.model.login.Member;
 import com.pay1oad.homepage.service.login.CustomUserDetailsService;
 import com.pay1oad.homepage.service.login.JwtRedisService;
 import com.pay1oad.homepage.service.login.MemberService;
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -55,17 +56,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String token = parseBearerToken(request);
             if (token != null && !token.equalsIgnoreCase("null")) {
+
+                Claims claims = tokenProvider.parseClaims(token);
+                if (claims.get("auth") == null) {
+                    throw new RuntimeException("권한 정보가 없는 토큰입니다.");
+                }
+
                 String userID = tokenProvider.validateAndGetUserId(token);
                 String username = memberService.getUsername(Integer.valueOf(userID));
                 if (Objects.equals(jwtRedisService.getValues(username), token)) {
                     // Load user details to get authorities
                     UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+
                     if (userDetails != null) {
-                        AbstractAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                                userDetails.getUsername(),
-                                null,
-                                userDetails.getAuthorities()
-                        );
+                        AbstractAuthenticationToken authentication = (AbstractAuthenticationToken) tokenProvider.getAuthentication(userDetails);
                         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                         SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
                         securityContext.setAuthentication(authentication);

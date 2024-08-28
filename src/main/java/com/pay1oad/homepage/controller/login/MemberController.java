@@ -1,5 +1,6 @@
 package com.pay1oad.homepage.controller.login;
 
+import com.pay1oad.homepage.dto.JwtToken;
 import com.pay1oad.homepage.dto.login.LoginRequestDTO;
 import com.pay1oad.homepage.dto.login.MemberDTO;
 import com.pay1oad.homepage.dto.ResponseDTO;
@@ -94,12 +95,12 @@ public class MemberController {
 
         //log.info(memberDTO.getUsername()+"\n"+memberDTO.getPasswd()+"\n");
         if(member!=null){
-            final String token=tokenProvider.create(member);
+            final JwtToken token=tokenProvider.create(member);
             final MemberDTO responseMemberDTO = MemberDTO.builder()
                     .username(member.getUsername())
                     .userid(String.valueOf(member.getUserid()))
                     .email(member.getEmail())
-                    .token(token)
+                    .token(String.valueOf(token))
                     .build();
 
             //redis
@@ -110,8 +111,8 @@ public class MemberController {
             }
 
             //add logged in list
-            jwtRedisService.setValues(member.getUsername(), token, Duration.ofSeconds(600));
-
+            jwtRedisService.setValues("access_"+member.getUsername(), token.getAccessToken(), Duration.ofSeconds(600));
+            jwtRedisService.setValues("refresh_"+member.getUsername(), token.getRefreshToken(), Duration.ofHours(60));
 
             return ResponseEntity.ok().body(responseMemberDTO);
         }else{
