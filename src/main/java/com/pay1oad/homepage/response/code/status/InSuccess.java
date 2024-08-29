@@ -11,6 +11,7 @@ public enum InSuccess {
     _OK(HttpStatus.OK, "COMMON200", "성공입니다."),
 
     LOGIN_SUCCESS(HttpStatus.OK, "MEMBER2001", "로그인 성공"),
+    SIGNUP_SUCCESS(HttpStatus.OK, "MEMBER2002", "회원가입 성공"),
 
     ;
 

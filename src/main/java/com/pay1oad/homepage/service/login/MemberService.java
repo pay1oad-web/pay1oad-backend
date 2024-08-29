@@ -1,7 +1,9 @@
 package com.pay1oad.homepage.service.login;
 import com.pay1oad.homepage.dto.JwtToken;
+import com.pay1oad.homepage.dto.ResponseDTO;
 import com.pay1oad.homepage.dto.login.LoginRequestDTO;
 import com.pay1oad.homepage.dto.login.LoginResponseDTO;
+import com.pay1oad.homepage.dto.login.MemberDTO;
 import com.pay1oad.homepage.exception.CustomException;
 import com.pay1oad.homepage.model.login.MemberAuth;
 import com.pay1oad.homepage.response.code.status.ErrorStatus;
@@ -10,9 +12,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import com.pay1oad.homepage.model.login.Member;
 import com.pay1oad.homepage.persistence.login.MemberRepository;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -62,7 +66,7 @@ public class MemberService {
     public Member getMemberByID(final Integer userid){ return memberRepository.findByUserid(userid);}
 
 
-    public LoginResponseDTO.toSignUpDTO signIn(LoginRequestDTO.toSignInDTO signInDTO){
+    public LoginResponseDTO.toSignInDTO signIn(LoginRequestDTO.toSignInDTO signInDTO){
         Member member=getByCredentials(
                 signInDTO.getUserName(),
                 signInDTO.getPasswd());
@@ -71,7 +75,7 @@ public class MemberService {
         if(member!=null){
             final JwtToken token=tokenProvider.create(member);
 
-            final LoginResponseDTO.toSignUpDTO toSignUpDTO = LoginResponseDTO.toSignUpDTO.builder()
+            final LoginResponseDTO.toSignInDTO toSignInDTO = LoginResponseDTO.toSignInDTO.builder()
                     .userName(member.getUsername())
                     .accessToken(token.getAccessToken())
                     .refreshToken(token.getRefreshToken())
@@ -88,9 +92,67 @@ public class MemberService {
 //            jwtRedisService.setValues("access_"+member.getUsername(), token.getAccessToken(), Duration.ofSeconds(600));
             jwtRedisService.setValues(member.getUsername(), token.getRefreshToken(), Duration.ofHours(60));
 
-            return toSignUpDTO;
+            return toSignInDTO;
         }else{
             throw new CustomException(ErrorStatus.LOGIN_FAILED_BY_PASSWD_OR_MEMBER_NOT_EXIST);
         }
     }
+
+    public LoginResponseDTO.toSignUpDTO signUp(LoginRequestDTO.toSignUpDTO toSignUpDTO){
+
+        if (toSignUpDTO==null||toSignUpDTO.getPasswd()==null){
+            throw new CustomException(ErrorStatus.PASSWD_FORMAT_NOT_VALID);
+        }else if(!validPasswd(toSignUpDTO.getPasswd())){
+            throw new CustomException(ErrorStatus.PASSWD_FORMAT_NOT_VALID);
+        }else if (!validEmail(toSignUpDTO.getEmail())) {
+            throw new CustomException(ErrorStatus.EMAIL_FORMAT_NOT_VALID);
+        }
+
+        Optional<Member> ckMember = Optional.ofNullable(memberRepository.findByUsername(toSignUpDTO.getUserName()));
+
+        if(ckMember.isPresent()){
+            throw new CustomException(ErrorStatus.DUPLICATED_USERNAME);
+        }
+
+        Member member =Member.builder()
+                .username(toSignUpDTO.getUserName())
+                .passwd(toSignUpDTO.getPasswd())
+                .email(toSignUpDTO.getEmail())
+                .verified(Boolean.FALSE)
+                .build();
+
+        Member resisteredByMember=create(member);
+
+        LoginResponseDTO.toSignUpDTO responseSignUpDTO=LoginResponseDTO.toSignUpDTO.builder()
+                .userName(resisteredByMember.getUsername())
+                .email(resisteredByMember.getEmail())
+                .build();
+
+        return responseSignUpDTO;
+
+    }
+
+
+
+
+
+
+
+
+
+    private boolean validPasswd(String passwd){
+        if(passwd.length() < 8)
+            return false;
+
+        String pattern = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).+$";
+
+        return passwd.matches(pattern);
+    }
+
+    private boolean validEmail(String email){
+        String pattern = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$";
+
+        return email.matches(pattern);
+    }
+
 }
