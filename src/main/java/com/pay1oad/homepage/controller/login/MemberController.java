@@ -2,6 +2,7 @@ package com.pay1oad.homepage.controller.login;
 
 import com.pay1oad.homepage.dto.JwtToken;
 import com.pay1oad.homepage.dto.login.LoginRequestDTO;
+import com.pay1oad.homepage.dto.login.LoginResponseDTO;
 import com.pay1oad.homepage.dto.login.MemberDTO;
 import com.pay1oad.homepage.dto.ResponseDTO;
 //import com.pay1oad.homepage.event.UserRegistrationEvent;
@@ -99,9 +100,9 @@ public class MemberController {
 
     @Operation(summary = "로그인 API", description = "username, passwd를 입력하세요. 나머지 DTO 형식은 무시해도 됩니다.")
     @PostMapping("/signin")
-    public ResForm<MemberDTO> authenticate(@Valid @RequestBody LoginRequestDTO.toSignInDTO signInDTO){
-        MemberDTO memberDTO = memberService.signIn(signInDTO);
-        return ResForm.onSuccess(InSuccess.LOGIN_SUCCESS, memberDTO);
+    public ResForm<LoginResponseDTO.toSignUpDTO> authenticate(@Valid @RequestBody LoginRequestDTO.toSignInDTO signInDTO){
+        LoginResponseDTO.toSignUpDTO toSignUpDTO = memberService.signIn(signInDTO);
+        return ResForm.onSuccess(InSuccess.LOGIN_SUCCESS, toSignUpDTO);
     }
 
     @Operation(summary = "로그아웃 API", description = "JWT 토큰으로 해당 유저를 로그아웃 합니다. 서버에서 기존 토큰을 무효화 합니다.")

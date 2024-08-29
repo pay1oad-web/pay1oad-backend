@@ -1,7 +1,7 @@
 package com.pay1oad.homepage.service.login;
 import com.pay1oad.homepage.dto.JwtToken;
 import com.pay1oad.homepage.dto.login.LoginRequestDTO;
-import com.pay1oad.homepage.dto.login.MemberDTO;
+import com.pay1oad.homepage.dto.login.LoginResponseDTO;
 import com.pay1oad.homepage.exception.CustomException;
 import com.pay1oad.homepage.model.login.MemberAuth;
 import com.pay1oad.homepage.response.code.status.ErrorStatus;
@@ -10,8 +10,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import com.pay1oad.homepage.model.login.Member;
 import com.pay1oad.homepage.persistence.login.MemberRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -64,7 +62,7 @@ public class MemberService {
     public Member getMemberByID(final Integer userid){ return memberRepository.findByUserid(userid);}
 
 
-    public MemberDTO signIn(LoginRequestDTO.toSignInDTO signInDTO){
+    public LoginResponseDTO.toSignUpDTO signIn(LoginRequestDTO.toSignInDTO signInDTO){
         Member member=getByCredentials(
                 signInDTO.getUserName(),
                 signInDTO.getPasswd());
@@ -72,11 +70,11 @@ public class MemberService {
         //log.info(memberDTO.getUsername()+"\n"+memberDTO.getPasswd()+"\n");
         if(member!=null){
             final JwtToken token=tokenProvider.create(member);
-            final MemberDTO responseMemberDTO = MemberDTO.builder()
-                    .username(member.getUsername())
-                    .userid(String.valueOf(member.getUserid()))
-                    .email(member.getEmail())
-                    .token(String.valueOf(token))
+
+            final LoginResponseDTO.toSignUpDTO toSignUpDTO = LoginResponseDTO.toSignUpDTO.builder()
+                    .userName(member.getUsername())
+                    .accessToken(token.getAccessToken())
+                    .refreshToken(token.getRefreshToken())
                     .build();
 
             //redis
@@ -90,7 +88,7 @@ public class MemberService {
 //            jwtRedisService.setValues("access_"+member.getUsername(), token.getAccessToken(), Duration.ofSeconds(600));
             jwtRedisService.setValues(member.getUsername(), token.getRefreshToken(), Duration.ofHours(60));
 
-            return responseMemberDTO;
+            return toSignUpDTO;
         }else{
             throw new CustomException(ErrorStatus.LOGIN_FAILED_BY_PASSWD_OR_MEMBER_NOT_EXIST);
         }
