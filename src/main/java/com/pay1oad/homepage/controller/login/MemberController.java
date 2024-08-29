@@ -2,13 +2,16 @@ package com.pay1oad.homepage.controller.login;
 
 import com.pay1oad.homepage.dto.JwtToken;
 import com.pay1oad.homepage.dto.login.LoginRequestDTO;
+import com.pay1oad.homepage.dto.login.LoginResponseDTO;
 import com.pay1oad.homepage.dto.login.MemberDTO;
 import com.pay1oad.homepage.dto.ResponseDTO;
 //import com.pay1oad.homepage.event.UserRegistrationEvent;
 import com.pay1oad.homepage.exception.CustomException;
 import com.pay1oad.homepage.model.login.Member;
 import com.pay1oad.homepage.persistence.login.MemberRepository;
+import com.pay1oad.homepage.response.ResForm;
 import com.pay1oad.homepage.response.code.status.ErrorStatus;
+import com.pay1oad.homepage.response.code.status.InSuccess;
 import com.pay1oad.homepage.security.JwtUtils;
 import com.pay1oad.homepage.security.TokenProvider;
 import com.pay1oad.homepage.service.login.JwtRedisService;
@@ -62,72 +65,16 @@ public class MemberController {
 
     @Operation(summary = "회원가입 API", description = "username, email, passwd를 입력하세요. 나머지 DTO 형식은 무시해도 됩니다.")
     @PostMapping("/signup")
-    public ResponseEntity<?> registerUser(@RequestBody MemberDTO memberDTO) {
-        try {
-            if (memberDTO==null||memberDTO.getPasswd()==null){
-                throw new RuntimeException("Passwd value null");
-            }else if(!validPasswd(memberDTO.getPasswd())){
-                throw new RuntimeException("invalid Passwd value");
-            }else if (!validEmail(memberDTO.getEmail())) {
-                throw new RuntimeException("invalid Email");
-            }
-
-            Member member =Member.builder()
-                    .username(memberDTO.getUsername())
-                    .passwd(memberDTO.getPasswd())
-                    .email(memberDTO.getEmail())
-                    .build();
-
-            Member resisteredByMember=memberService.create(member);
-            MemberDTO responseMemberDTO=MemberDTO.builder()
-                    .userid(String.valueOf(resisteredByMember.getUserid()))
-                    .username(resisteredByMember.getUsername())
-                    .email(resisteredByMember.getEmail())
-                    .build();
-
-            return ResponseEntity.ok().body(responseMemberDTO);
-
-        }catch(Exception e){
-            ResponseDTO responseDTO=ResponseDTO.builder().error(e.getMessage()).build();
-            return ResponseEntity
-                    .badRequest()
-                    .body(responseDTO);
-        }
+    public ResForm<LoginResponseDTO.toSignUpDTO> registerUser(@RequestBody LoginRequestDTO.toSignUpDTO signUpDTO) {
+        LoginResponseDTO.toSignUpDTO responseSignUpDTO = memberService.signUp(signUpDTO);
+        return ResForm.onSuccess(InSuccess.SIGNUP_SUCCESS, responseSignUpDTO);
     }
 
     @Operation(summary = "로그인 API", description = "username, passwd를 입력하세요. 나머지 DTO 형식은 무시해도 됩니다.")
     @PostMapping("/signin")
-    public ResponseEntity<?> authenticate(@Valid @RequestBody LoginRequestDTO.toSignInDTO signInDTO){
-        Member member=memberService.getByCredentials(
-                signInDTO.getUserName(),
-                signInDTO.getPasswd());
-
-        //log.info(memberDTO.getUsername()+"\n"+memberDTO.getPasswd()+"\n");
-        if(member!=null){
-            final JwtToken token=tokenProvider.create(member);
-            final MemberDTO responseMemberDTO = MemberDTO.builder()
-                    .username(member.getUsername())
-                    .userid(String.valueOf(member.getUserid()))
-                    .email(member.getEmail())
-                    .token(String.valueOf(token))
-                    .build();
-
-            //redis
-
-            //Delete exist refresh Token
-            if(jwtRedisService.getValues(signInDTO.getUserName())!=null){
-                jwtRedisService.deleteValues(signInDTO.getUserName());
-            }
-
-            //add logged in list
-//            jwtRedisService.setValues("access_"+member.getUsername(), token.getAccessToken(), Duration.ofSeconds(600));
-            jwtRedisService.setValues(member.getUsername(), token.getRefreshToken(), Duration.ofHours(60));
-
-            return ResponseEntity.ok().body(responseMemberDTO);
-        }else{
-            throw new CustomException(ErrorStatus.LOGIN_FAILED_BY_PASSWD_OR_MEMBER_NOT_EXIST);
-        }
-
+    public ResForm<LoginResponseDTO.toSignInDTO> authenticate(@Valid @RequestBody LoginRequestDTO.toSignInDTO signInDTO){
+        LoginResponseDTO.toSignInDTO toSignInDTO = memberService.signIn(signInDTO);
+        return ResForm.onSuccess(InSuccess.LOGIN_SUCCESS, toSignInDTO);
     }
 
     @Operation(summary = "로그아웃 API", description = "JWT 토큰으로 해당 유저를 로그아웃 합니다. 서버에서 기존 토큰을 무효화 합니다.")
@@ -231,18 +178,4 @@ public class MemberController {
         return buffer.toString();
     }
 
-    private boolean validPasswd(String passwd){
-        if(passwd.length() < 8)
-            return false;
-
-        String pattern = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).+$";
-
-        return passwd.matches(pattern);
-    }
-
-    private boolean validEmail(String email){
-        String pattern = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$";
-
-        return email.matches(pattern);
-    }
 }
