@@ -1,9 +1,16 @@
 package com.pay1oad.homepage.service.email;
 
 import com.pay1oad.homepage.exception.CustomException;
+import com.pay1oad.homepage.model.login.Member;
+import com.pay1oad.homepage.model.login.MemberAuth;
+import com.pay1oad.homepage.persistence.login.MemberRepository;
 import com.pay1oad.homepage.response.code.status.ErrorStatus;
+import com.pay1oad.homepage.security.JwtUtils;
+import com.pay1oad.homepage.service.login.MemberService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.pay1oad.homepage.service.login.EmailVerificationService;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -22,6 +29,10 @@ import java.util.Base64;
 public class EmailService {
 
     private final JavaMailSender mailSender;
+    private final JwtUtils jwtUtils;
+    private final MemberRepository memberRepository;
+    private final EmailVerificationService verificationService;
+    private final MemberService memberService;
 
     @Async
     public void sendVerificationEmail(String to, String text) throws NoSuchAlgorithmException {
@@ -66,4 +77,48 @@ public class EmailService {
         String content = createMailContent(username, verificationId);
         sendVerificationEmail(email, content);
     }
+
+    public String sendVerificationEmailService(HttpServletRequest httpServletRequest){
+        try {
+            String username = jwtUtils.getAccountIdFromRequest(httpServletRequest);
+            String verificationId = verificationService.generateVerification(username);
+            Member member = memberRepository.findByUsername(username);
+            if(!member.getMemberAuth().equals(MemberAuth.UNAUTH)){
+                throw new CustomException(ErrorStatus.EMAIL_ALREADY_VERIFIED);
+            }
+            sendVerificationEmail(username, member.getEmail(), verificationId);
+            return "Email Successfully Send.";
+        } catch (NoSuchAlgorithmException e) {
+            log.error("Email send Failed.", e);
+            throw new CustomException(ErrorStatus.EMAIL_SEND_FAILED);
+        }
+    }
+
+    public String verifyEmail(String id){
+        try {
+            byte[] decodedId = Base64.getDecoder().decode(id);
+            String verificationId = new String(decodedId);
+            String username = verificationService.getUsernameForVerificationId(verificationId);
+
+            if (username != null) {
+                Member member = memberService.checkID(username);
+                if (member != null) {
+                    member.setVerified(true);
+                    if(member.getMemberAuth().equals(MemberAuth.UNAUTH)){
+                        member.setMemberAuth(MemberAuth.MEMBER);
+                        memberService.save(member);
+                        return "Email Verification Success";
+                    }else{
+                        throw new CustomException(ErrorStatus.EMAIL_ALREADY_VERIFIED);
+                    }
+
+                    //return "redirect:/success";
+                }
+            }
+        } catch (Exception e) {
+            log.error("이메일 인증 실패", e);
+        }
+        throw new CustomException(ErrorStatus.EMAIL_VERIFICATION_FAILED);
+    }
+
 }

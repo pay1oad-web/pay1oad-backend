@@ -25,6 +25,8 @@ public enum ErrorStatus {
 
 
     EMAIL_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "ENAIL4001", "이메일 전송에 실패했습니다."),
+    EMAIL_ALREADY_VERIFIED(HttpStatus.BAD_REQUEST, "EMAIL4002", "이미 이메일 인증되었습니다."),
+    EMAIL_VERIFICATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "EMAIL4003", "이메일 인증에 실패했습니다."),    
 
     REFRESH_TOKEN_NOT_VALID(HttpStatus.UNAUTHORIZED, "TOKEN4001", "해당 refresh token은 더 이상 유효하지 않습니다."),
     ACCESS_TOKEN_NOT_VALID(HttpStatus.UNAUTHORIZED, "TOKEN4002", "해당 access token은 더 이상 유효하지 않습니다."),
