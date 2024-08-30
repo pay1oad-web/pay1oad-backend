@@ -23,12 +23,12 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests((authorizeHttpRequests) -> authorizeHttpRequests
                         .requestMatchers("/", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-resources/**").permitAll()
-
                         .requestMatchers(new AntPathRequestMatcher("/")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("/auth/**")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("/h2-console/**")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("/verify/**")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("/admin/**")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/category/**")).authenticated() // Add this line
 
                         .anyRequest().authenticated()
                 )
@@ -39,7 +39,9 @@ public class SecurityConfig {
                         .ignoringRequestMatchers(new AntPathRequestMatcher("/verify/**"))
                         .ignoringRequestMatchers(new AntPathRequestMatcher("/board/**"))
                         .ignoringRequestMatchers(new AntPathRequestMatcher("/admin/**"))
-                        .ignoringRequestMatchers(new AntPathRequestMatcher("/email")))
+                      .ignoringRequestMatchers(new AntPathRequestMatcher("/email")))
+                        .ignoringRequestMatchers(new AntPathRequestMatcher("/category/**")) // CSRF ignore for category endpoints
+                )
 
                 .headers((headers) -> headers
                         .addHeaderWriter(new XFrameOptionsHeaderWriter(
@@ -47,7 +49,6 @@ public class SecurityConfig {
 
                 .addFilterAfter(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
-        ;
         return http.build();
     }
 }
