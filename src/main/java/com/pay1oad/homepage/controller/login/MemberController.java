@@ -1,15 +1,23 @@
 package com.pay1oad.homepage.controller.login;
 
+import com.pay1oad.homepage.dto.JwtToken;
 import com.pay1oad.homepage.dto.login.LoginRequestDTO;
+import com.pay1oad.homepage.dto.login.LoginResponseDTO;
 import com.pay1oad.homepage.dto.login.MemberDTO;
 import com.pay1oad.homepage.dto.ResponseDTO;
 //import com.pay1oad.homepage.event.UserRegistrationEvent;
 import com.pay1oad.homepage.exception.CustomException;
 import com.pay1oad.homepage.model.login.Member;
+import com.pay1oad.homepage.persistence.login.MemberRepository;
+import com.pay1oad.homepage.response.ResForm;
 import com.pay1oad.homepage.response.code.status.ErrorStatus;
+import com.pay1oad.homepage.response.code.status.InSuccess;
+import com.pay1oad.homepage.security.JwtUtils;
 import com.pay1oad.homepage.security.TokenProvider;
 import com.pay1oad.homepage.service.login.JwtRedisService;
 import com.pay1oad.homepage.service.login.MemberService;
+import jakarta.servlet.http.HttpServletRequest;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +49,9 @@ public class MemberController {
 
     private final JwtRedisService jwtRedisService;
 
+    private final JwtUtils jwtUtils;
+
+    private final MemberRepository memberRepository;
 
 
     /*private final JavaMailSender mailSender;
@@ -52,76 +63,23 @@ public class MemberController {
         this.verificationService = verificationService;
     }*/
 
+    @Operation(summary = "회원가입 API", description = "username, email, passwd를 입력하세요. 나머지 DTO 형식은 무시해도 됩니다.")
     @PostMapping("/signup")
-    public ResponseEntity<?> registerUser(@RequestBody MemberDTO memberDTO) {
-        try {
-            if (memberDTO==null||memberDTO.getPasswd()==null){
-                throw new RuntimeException("Passwd value null");
-            }else if(!validPasswd(memberDTO.getPasswd())){
-                throw new RuntimeException("invalid Passwd value");
-            }else if (!validEmail(memberDTO.getEmail())) {
-                throw new RuntimeException("invalid Email");
-            }
-
-            Member member =Member.builder()
-                    .username(memberDTO.getUsername())
-                    .passwd(memberDTO.getPasswd())
-                    .email(memberDTO.getEmail())
-                    .build();
-
-            Member resisteredByMember=memberService.create(member);
-            MemberDTO responseMemberDTO=MemberDTO.builder()
-                    .userid(String.valueOf(resisteredByMember.getUserid()))
-                    .username(resisteredByMember.getUsername())
-                    .email(resisteredByMember.getEmail())
-                    .build();
-
-            return ResponseEntity.ok().body(responseMemberDTO);
-
-        }catch(Exception e){
-            ResponseDTO responseDTO=ResponseDTO.builder().error(e.getMessage()).build();
-            return ResponseEntity
-                    .badRequest()
-                    .body(responseDTO);
-        }
+    public ResForm<LoginResponseDTO.toSignUpDTO> registerUser(@RequestBody LoginRequestDTO.toSignUpDTO signUpDTO) {
+        LoginResponseDTO.toSignUpDTO responseSignUpDTO = memberService.signUp(signUpDTO);
+        return ResForm.onSuccess(InSuccess.SIGNUP_SUCCESS, responseSignUpDTO);
     }
 
+    @Operation(summary = "로그인 API", description = "username, passwd를 입력하세요. 나머지 DTO 형식은 무시해도 됩니다.")
     @PostMapping("/signin")
-    public ResponseEntity<?> authenticate(@Valid @RequestBody LoginRequestDTO.toSignInDTO signInDTO){
-        Member member=memberService.getByCredentials(
-                signInDTO.getUserName(),
-                signInDTO.getPasswd());
-
-        //log.info(memberDTO.getUsername()+"\n"+memberDTO.getPasswd()+"\n");
-        if(member!=null){
-            final String token=tokenProvider.create(member);
-            final MemberDTO responseMemberDTO = MemberDTO.builder()
-                    .username(member.getUsername())
-                    .userid(String.valueOf(member.getUserid()))
-                    .email(member.getEmail())
-                    .token(token)
-                    .build();
-
-            //redis
-
-            //Already signed in
-            if(jwtRedisService.getValues(signInDTO.getUserName())!=null){
-                jwtRedisService.deleteValues(signInDTO.getUserName());
-            }
-
-            //add logged in list
-            jwtRedisService.setValues(member.getUsername(), token, Duration.ofSeconds(600));
-
-
-            return ResponseEntity.ok().body(responseMemberDTO);
-        }else{
-            throw new CustomException(ErrorStatus.LOGIN_FAILED_BY_PASSWD_OR_MEMBER_NOT_EXIST);
-        }
-
+    public ResForm<LoginResponseDTO.toSignInDTO> authenticate(@Valid @RequestBody LoginRequestDTO.toSignInDTO signInDTO){
+        LoginResponseDTO.toSignInDTO toSignInDTO = memberService.signIn(signInDTO);
+        return ResForm.onSuccess(InSuccess.LOGIN_SUCCESS, toSignInDTO);
     }
 
+    @Operation(summary = "로그아웃 API", description = "JWT 토큰으로 해당 유저를 로그아웃 합니다. 서버에서 기존 토큰을 무효화 합니다.")
     @PostMapping("/signout")
-    public String signout(){
+    public String signout(HttpServletRequest httpServletRequest){
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null) {
@@ -142,8 +100,12 @@ public class MemberController {
             if(!Objects.equals(userid, "anonymousUser")){
 //                log.info("username in signout: "+username.replaceAll("[\r\n]",""));
 
-                //logout
+                //logout -> redis에서 refresh token 제거 및 access token 블랙리스트로
                 jwtRedisService.deleteValues(userid);
+
+                String accessToken = jwtUtils.getToken(httpServletRequest);
+                Long expiration = tokenProvider.getExpiration(accessToken);
+                jwtRedisService.setBlackList(accessToken, "access_token", expiration);
 
                 return "signed out: "+userid;
             }else{
@@ -159,29 +121,36 @@ public class MemberController {
 
     }
 
+    @Operation(summary = "토큰 유효화 API", description = "입력한 JWT 토큰을 유효화 합니다. 유효화 기간은 10분 입니다.")
     @PostMapping("/refreshToken")
-    public String refresh(@RequestHeader("Authorization") String authorizationHeader){
+    public JwtToken refresh(HttpServletRequest httpServletRequest){
         //get token
-        String token = null;
-
-        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            token = authorizationHeader.substring(7);
-        }else{
-            return "Toekn is not valid";
-        }
+        String refreshToken = jwtUtils.getToken(httpServletRequest);
         //log.info("token: "+token);
 
         //get username
-        int userid= Integer.parseInt(tokenProvider.validateAndGetUserId(token));
+        int userid= Integer.parseInt(tokenProvider.validateAndGetUserId(refreshToken));
         String username=memberService.getUsername(userid);
 
+        if (Objects.equals(jwtRedisService.getValues(username), refreshToken)) {
+            log.info("Refreshed: "+username.replaceAll("[\r\n]",""));
 
-        log.info("Refreshed: "+username.replaceAll("[\r\n]",""));
+            jwtRedisService.deleteValues(username);
 
-        //refresh
-        jwtRedisService.setValues(username, token, Duration.ofSeconds(600));
+            //member 객체
+            Member member = memberService.getMemberByID(userid);
 
-        return "refreshed: "+username;
+            final JwtToken token=tokenProvider.create(member);
+
+            //refresh
+            jwtRedisService.setValues(username, token.getRefreshToken(), Duration.ofDays(3));
+
+            return token;
+
+
+        }else{
+            throw new CustomException(ErrorStatus.REFRESH_TOKEN_NOT_VALID);
+        }
 
     }
 
@@ -209,18 +178,4 @@ public class MemberController {
         return buffer.toString();
     }
 
-    private boolean validPasswd(String passwd){
-        if(passwd.length() < 8)
-            return false;
-
-        String pattern = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).+$";
-
-        return passwd.matches(pattern);
-    }
-
-    private boolean validEmail(String email){
-        String pattern = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$";
-
-        return email.matches(pattern);
-    }
 }

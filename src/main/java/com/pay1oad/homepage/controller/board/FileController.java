@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import com.pay1oad.homepage.model.login.Member;
+import com.pay1oad.homepage.security.TokenProvider;
+import com.pay1oad.homepage.service.login.MemberService;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
@@ -19,51 +22,55 @@ import com.pay1oad.homepage.dto.board.ResFileUploadDTO;
 import com.pay1oad.homepage.service.board.FileService;
 
 import lombok.RequiredArgsConstructor;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/category/{categoryId}/board/{boardId}/file")
 @RequiredArgsConstructor
 public class FileController {
-
-    private static final long MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
-    private static final List<String> ALLOWED_FILE_TYPES = List.of("image/jpeg", "image/png", "application/pdf");
-
-
     private final FileService fileService;
+    private final TokenProvider tokenProvider;
+    private final MemberService memberService;
 
     @PostMapping("/upload")
     public CompletableFuture<ResponseEntity<List<ResFileUploadDTO>>> upload(
+            HttpServletRequest request,
+            @PathVariable("categoryId") Long categoryId,
             @PathVariable("boardId") Long boardId,
-            @PathVariable("categoryid") Long categoryId,
-            @RequestParam("file") List<MultipartFile> files) {
+            @RequestParam("file") List<MultipartFile> files) {  // 중복된 @PathVariable 제거
         return CompletableFuture.supplyAsync(() -> {
             try {
-                // 파일 유형 및 크기 검사
+                String token = request.getHeader("Authorization").substring(7);
+                int userid = Integer.parseInt(tokenProvider.validateAndGetUserId(token));
+                Member member = memberService.getMemberByID(userid);
+
+                // 파일 업로드 시작 로그
+                System.out.println("Starting file upload...");
+
+                // 파일 정보 출력
                 for (MultipartFile file : files) {
-                    if (file.getSize() > MAX_FILE_SIZE) {
-                        throw new IllegalArgumentException("File size exceeds the allowed limit of 5MB");
-                    }
-                    if (!ALLOWED_FILE_TYPES.contains(file.getContentType())) {
-                        throw new IllegalArgumentException("File type " + file.getContentType() + " is not allowed");
-                    }
-                    // 파일 이름 유효성 검사
-                    if (!isValidFileName(file.getOriginalFilename())) {
-                        throw new IllegalArgumentException("Invalid file name: " + file.getOriginalFilename());
-                    }
+                    System.out.println("File name: " + file.getOriginalFilename());
+                    System.out.println("File size: " + file.getSize());
+                    System.out.println("File type: " + file.getContentType());
                 }
 
                 List<ResFileUploadDTO> saveFile = fileService.upload(boardId, categoryId, files);
                 return ResponseEntity.status(HttpStatus.CREATED).body(saveFile);
             } catch (IllegalArgumentException e) {
+                System.out.println("IllegalArgumentException: " + e.getMessage());
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
             } catch (IOException e) {
+                System.out.println("IOException: " + e.getMessage());
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
             }
         });
     }
 
     @GetMapping("/download")
-    public ResponseEntity<Resource> download(@RequestParam("fileId") Long fileId) {
+    public ResponseEntity<Resource> download(
+            @RequestParam("fileId") Long fileId,
+            @PathVariable("categoryId") Long categoryId,
+            @PathVariable("boardId") Long boardId) {
         try {
             ResFileDownloadDTO downloadDto = fileService.download(fileId);
 
@@ -79,7 +86,10 @@ public class FileController {
     }
 
     @DeleteMapping("/delete")
-    public ResponseEntity<Long> delete(@RequestParam("fileId") Long fileId) {
+    public ResponseEntity<Long> delete(
+            @RequestParam("fileId") Long fileId,
+            @PathVariable("categoryId") Long categoryId,
+            @PathVariable("boardId") Long boardId) {
         try {
             fileService.delete(fileId);
             return ResponseEntity.status(HttpStatus.OK).build();

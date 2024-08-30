@@ -5,6 +5,7 @@ import com.pay1oad.homepage.model.login.Member;
 import com.pay1oad.homepage.security.TokenProvider;
 import com.pay1oad.homepage.service.board.BoardService;
 import com.pay1oad.homepage.service.login.MemberService;
+import com.pay1oad.homepage.security.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -13,8 +14,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 @CrossOrigin(origins = "http://localhost:3000")
 @Slf4j
@@ -23,8 +25,8 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class BoardController {
     private final BoardService boardService;
-    private final TokenProvider tokenProvider;
     private final MemberService memberService;
+    private final JwtUtils jwtUtils;
 
     // 페이징 목록
     @GetMapping("/list")
@@ -39,7 +41,10 @@ public class BoardController {
     public ResponseEntity<Page<ResBoardListDTO>> search(
             @RequestBody SearchDTO searchDTO,
             @PageableDefault(size = 5, sort = "id", direction = Sort.Direction.DESC) Pageable pageable,
-            @AuthenticationPrincipal Member member) {
+            HttpServletRequest request) {
+        int userid = jwtUtils.getUserId(request);
+        Member member = memberService.getMemberByID(userid);
+
         if (searchDTO.getUsername() == null || searchDTO.getUsername().isEmpty()) {
             searchDTO.setUsername(member.getUsername());
         }
@@ -51,12 +56,9 @@ public class BoardController {
     public ResponseEntity<ResBoardWriteDTO> write(
             @RequestBody BoardWriteDTO boardDTO,
             @RequestHeader("Authorization") String authorizationHeader,
-            @PathVariable Long categoryId) {
-        String token = null;
-        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            token = authorizationHeader.substring(7);
-        }
-        int userid = Integer.parseInt(tokenProvider.validateAndGetUserId(token));
+            @PathVariable Long categoryId,
+            HttpServletRequest request) {
+        int userid = jwtUtils.getUserId(request);
         Member member = memberService.getMemberByID(userid);
 
         ResBoardWriteDTO saveBoardDTO = boardService.write(boardDTO, member, categoryId);
@@ -69,12 +71,15 @@ public class BoardController {
         return ResponseEntity.status(HttpStatus.OK).body(findBoardDTO);
     }
 
-    // 상세보기
+    // 게시글 수정
     @PatchMapping("/{boardId}/update")
     public ResponseEntity<ResBoardDetailsDTO> update(
             @PathVariable("boardId") Long boardId,
             @RequestBody BoardUpdateDTO boardDTO,
-            @AuthenticationPrincipal Member member) {
+            HttpServletRequest request) {
+        int userid = jwtUtils.getUserId(request); // 사용자 ID 추출
+        Member member = memberService.getMemberByID(userid);
+
         if (!boardService.checkOwnership(boardId, member.getUsername())) {
             log.warn("권한 거부: 사용자 {}는 게시글 {}을 수정할 권한이 없습니다.", member.getUsername(), boardId);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -87,7 +92,10 @@ public class BoardController {
     @DeleteMapping("/{boardId}")
     public ResponseEntity<?> delete(
             @PathVariable("boardId") Long boardId,
-            @AuthenticationPrincipal Member member) {
+            HttpServletRequest request) {
+        int userid = jwtUtils.getUserId(request); // 사용자 ID 추출
+        Member member = memberService.getMemberByID(userid);
+
         // 권한 검증 로직
         if (!boardService.checkOwnership(boardId, member.getUsername())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -109,12 +117,8 @@ public class BoardController {
     @PostMapping("/{boardId}/like")
     public ResponseEntity<Void> toggleLike(
             @PathVariable Long boardId,
-            @RequestHeader("Authorization") String authorizationHeader){
-        String token = null;
-        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            token = authorizationHeader.substring(7);
-        }
-        int userid = Integer.parseInt(tokenProvider.validateAndGetUserId(token));
+            HttpServletRequest request) {
+        int userid = jwtUtils.getUserId(request); // 사용자 ID 추출
         Member member = memberService.getMemberByID(userid);
         boardService.toggleLike(boardId, member);
         return ResponseEntity.status(HttpStatus.OK).build();

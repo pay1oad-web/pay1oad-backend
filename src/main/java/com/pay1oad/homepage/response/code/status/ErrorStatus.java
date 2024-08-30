@@ -18,10 +18,15 @@ public enum ErrorStatus {
 
     Member_USER_NOT_FOUND(HttpStatus.NOT_FOUND, "MEMBER4001", "Member not exist. Login Failed."),
     LOGIN_FAILED_BY_PASSWD_OR_MEMBER_NOT_EXIST(HttpStatus.UNAUTHORIZED, "MEMBER4002", "유저 또는 비밀번호가 잘못되었습니다."),
+    PASSWD_FORMAT_NOT_VALID(HttpStatus.BAD_REQUEST, "MEMBER4003", "비밀번호 형식이 잘못되었습니다."),
+    EMAIL_FORMAT_NOT_VALID(HttpStatus.BAD_REQUEST, "MEMBER4004", "이메일 형식이 잘못되었습니다."),
+    DUPLICATED_USERNAME(HttpStatus.CONFLICT, "MEMBER4005", "이미 있는 사용자 이름입니다."),
 
     EMAIL_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "ENAIL4001", "이메일 전송에 실패했습니다."),
 
-
+    REFRESH_TOKEN_NOT_VALID(HttpStatus.UNAUTHORIZED, "TOKEN4001", "해당 refresh token은 더 이상 유효하지 않습니다."),
+    
+    
     ;
     //
     private final HttpStatus httpStatus;

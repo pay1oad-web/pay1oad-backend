@@ -1,6 +1,10 @@
 spring:
   application:
     name: homepage
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 100MB
 
   #DB
   datasource:
