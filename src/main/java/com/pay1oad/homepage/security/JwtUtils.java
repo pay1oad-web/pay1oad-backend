@@ -41,4 +41,12 @@ public class JwtUtils {
             return null;
         }
     }
+
+    public Integer getUserId(HttpServletRequest request){
+        String refreshToken = getToken(request);
+        //log.info("token: "+token);
+
+        //get username
+        return Integer.parseInt(tokenProvider.validateAndGetUserId(refreshToken));
+    }
 }
