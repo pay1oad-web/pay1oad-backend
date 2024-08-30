@@ -86,35 +86,9 @@ public class MemberController {
 
     @Operation(summary = "토큰 유효화 API", description = "입력한 JWT 토큰을 유효화 합니다. 유효화 기간은 10분 입니다.")
     @PostMapping("/refreshToken")
-    public JwtToken refresh(HttpServletRequest httpServletRequest){
-        //get token
-        String refreshToken = jwtUtils.getToken(httpServletRequest);
-        //log.info("token: "+token);
-
-        //get username
-        int userid= Integer.parseInt(tokenProvider.validateAndGetUserId(refreshToken));
-        String username=memberService.getUsername(userid);
-
-        if (Objects.equals(jwtRedisService.getValues(username), refreshToken)) {
-            log.info("Refreshed: "+username.replaceAll("[\r\n]",""));
-
-            jwtRedisService.deleteValues(username);
-
-            //member 객체
-            Member member = memberService.getMemberByID(userid);
-
-            final JwtToken token=tokenProvider.create(member);
-
-            //refresh
-            jwtRedisService.setValues(username, token.getRefreshToken(), Duration.ofDays(3));
-
-            return token;
-
-
-        }else{
-            throw new CustomException(ErrorStatus.REFRESH_TOKEN_NOT_VALID);
-        }
-
+    public ResForm<LoginResponseDTO.toRefreshDTO> refresh(HttpServletRequest httpServletRequest){
+        LoginResponseDTO.toRefreshDTO toRefreshDTO = memberService.refreshToken(httpServletRequest);
+        return ResForm.onSuccess(InSuccess.TOKEN_REFRESH_SUCCESS, toRefreshDTO);
     }
 
 //    @GetMapping("/test")

@@ -161,7 +161,36 @@ public class MemberService {
         return "signed out: "+userName;
     }
 
+    public LoginResponseDTO.toRefreshDTO refreshToken(HttpServletRequest httpServletRequest){
+        //get token
+        String refreshToken = jwtUtils.getToken(httpServletRequest);
+        //log.info("token: "+token);
 
+        //get username
+        int userid= Integer.parseInt(tokenProvider.validateAndGetUserId(refreshToken));
+        Member member = memberRepository.findByUserid(userid);
+        String username=member.getUsername();
+
+        if (Objects.equals(jwtRedisService.getValues(username), refreshToken)) {
+            log.info("Refreshed: "+username.replaceAll("[\r\n]",""));
+
+            jwtRedisService.deleteValues(username);
+
+
+            final JwtToken token=tokenProvider.create(member);
+
+            //refresh
+            jwtRedisService.setValues(username, token.getRefreshToken(), Duration.ofDays(3));
+
+            return LoginResponseDTO.toRefreshDTO.builder()
+                    .userName(username)
+                    .accessToken(token.getAccessToken())
+                    .refreshToken(token.getRefreshToken())
+                    .build();
+        }else{
+            throw new CustomException(ErrorStatus.REFRESH_TOKEN_NOT_VALID);
+        }
+    }
 
 
 
