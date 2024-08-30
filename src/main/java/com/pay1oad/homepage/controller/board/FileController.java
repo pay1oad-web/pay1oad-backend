@@ -11,13 +11,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.pay1oad.homepage.dto.board.ResFileDownloadDTO;
@@ -27,7 +21,7 @@ import com.pay1oad.homepage.service.board.FileService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/board/{boardId}/file")
+@RequestMapping("/category/{categoryId}/board/{boardId}/file")
 @RequiredArgsConstructor
 public class FileController {
 
@@ -40,6 +34,7 @@ public class FileController {
     @PostMapping("/upload")
     public CompletableFuture<ResponseEntity<List<ResFileUploadDTO>>> upload(
             @PathVariable("boardId") Long boardId,
+            @PathVariable("categoryid") Long categoryId,
             @RequestParam("file") List<MultipartFile> files) {
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -57,7 +52,7 @@ public class FileController {
                     }
                 }
 
-                List<ResFileUploadDTO> saveFile = fileService.upload(boardId, files);
+                List<ResFileUploadDTO> saveFile = fileService.upload(boardId, categoryId, files);
                 return ResponseEntity.status(HttpStatus.CREATED).body(saveFile);
             } catch (IllegalArgumentException e) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);

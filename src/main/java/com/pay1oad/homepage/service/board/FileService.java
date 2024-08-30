@@ -36,11 +36,20 @@ public class FileService {
     @Value("${project.folderPath}")
     private String FOLDER_PATH;
 
-    public List<ResFileUploadDTO> upload(Long boardId, List<MultipartFile> multipartFiles) throws IOException {
+    public List<ResFileUploadDTO> upload(Long boardId, Long categoryId, List<MultipartFile> multipartFiles) throws IOException {
         // 게시글 찾기
         Board board = boardRepository.findById(boardId).orElseThrow(
                 () -> new ResourceNotFoundException("Board", "Board Id", String.valueOf(boardId))
         );
+
+        if (board.getTitle() == null || board.getTitle().isEmpty()) {
+            throw new IllegalArgumentException("파일만 업로드할 수 없습니다. 게시글을 작성하세요.");
+        }
+
+        if(!Long.valueOf(board.getCategory().getId()).equals(categoryId)) {
+            throw new IllegalArgumentException("Board does not belong to the specified category");
+        }
+
         List<FileEntity> fileEntitys = new ArrayList<>();
         for (MultipartFile multipartFile : multipartFiles) {
             // get origin file name

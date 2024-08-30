@@ -1,6 +1,5 @@
 package com.pay1oad.homepage.persistence.board;
 
-import java.util.List;
 import java.util.Optional;
 
 import com.pay1oad.homepage.model.board.Category;
