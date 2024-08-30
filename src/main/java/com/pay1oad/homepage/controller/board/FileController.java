@@ -44,15 +44,28 @@ public class FileController {
                 int userid = Integer.parseInt(tokenProvider.validateAndGetUserId(token));
                 Member member = memberService.getMemberByID(userid);
 
+                // 파일 업로드 시작 로그
+                System.out.println("Starting file upload...");
+
+                // 파일 정보 출력
+                for (MultipartFile file : files) {
+                    System.out.println("File name: " + file.getOriginalFilename());
+                    System.out.println("File size: " + file.getSize());
+                    System.out.println("File type: " + file.getContentType());
+                }
+
                 List<ResFileUploadDTO> saveFile = fileService.upload(boardId, categoryId, files);
                 return ResponseEntity.status(HttpStatus.CREATED).body(saveFile);
             } catch (IllegalArgumentException e) {
+                System.out.println("IllegalArgumentException: " + e.getMessage());
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
             } catch (IOException e) {
+                System.out.println("IOException: " + e.getMessage());
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
             }
         });
     }
+
 
     @GetMapping("/download")
     public ResponseEntity<Resource> download(
