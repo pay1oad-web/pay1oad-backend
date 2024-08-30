@@ -1,9 +1,7 @@
 package com.pay1oad.homepage.service.login;
 import com.pay1oad.homepage.dto.JwtToken;
-import com.pay1oad.homepage.dto.ResponseDTO;
 import com.pay1oad.homepage.dto.login.LoginRequestDTO;
 import com.pay1oad.homepage.dto.login.LoginResponseDTO;
-import com.pay1oad.homepage.dto.login.MemberDTO;
 import com.pay1oad.homepage.exception.CustomException;
 import com.pay1oad.homepage.model.login.MemberAuth;
 import com.pay1oad.homepage.response.code.status.ErrorStatus;
@@ -15,10 +13,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import com.pay1oad.homepage.model.login.Member;
 import com.pay1oad.homepage.persistence.login.MemberRepository;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
