@@ -1,8 +1,10 @@
 package com.pay1oad.homepage.security;
 
 import com.pay1oad.homepage.model.login.Member;
+import com.pay1oad.homepage.persistence.login.MemberRepository;
 import com.pay1oad.homepage.service.login.MemberService;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -11,13 +13,11 @@ import org.springframework.util.StringUtils;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class JwtUtils {
 
-    @Autowired
-    private TokenProvider tokenProvider;
-
-    @Autowired
-    private MemberService memberService;
+    private final TokenProvider tokenProvider;
+    private final MemberRepository memberRepository;
 
     public String getAccountIdFromRequest(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
@@ -25,7 +25,7 @@ public class JwtUtils {
             String token = bearerToken.substring(7);
 
             int userid= Integer.parseInt(tokenProvider.validateAndGetUserId(token));
-            Member member=memberService.getMemberByID(userid);
+            Member member=memberRepository.findByUserid(userid);
 
             return member.getUsername();
         }else{
