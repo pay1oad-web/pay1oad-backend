@@ -18,4 +18,12 @@ public class LoginResponseDTO {
         private String userName;
         private String email;
     }
+
+    @Getter
+    @Builder
+    public static class toRefreshDTO {
+        private String userName;
+        private String accessToken;
+        private String refreshToken;
+    }
 }
