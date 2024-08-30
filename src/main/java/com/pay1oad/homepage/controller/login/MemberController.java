@@ -79,46 +79,9 @@ public class MemberController {
 
     @Operation(summary = "로그아웃 API", description = "JWT 토큰으로 해당 유저를 로그아웃 합니다. 서버에서 기존 토큰을 무효화 합니다.")
     @PostMapping("/signout")
-    public String signout(HttpServletRequest httpServletRequest){
-
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null) {
-            Object principal = authentication.getPrincipal();
-            String userid;
-
-            if (principal instanceof UserDetails) {
-                userid = String.valueOf(((Member) principal).getUserid());
-            } else if (principal instanceof String) {
-                userid = (String) principal;
-            } else {
-                throw new IllegalStateException("Unexpected principal type: " + principal.getClass());
-            }
-
-
-
-            //log.info("userid in signout: "+userid);
-            if(!Objects.equals(userid, "anonymousUser")){
-//                log.info("username in signout: "+username.replaceAll("[\r\n]",""));
-
-                //logout -> redis에서 refresh token 제거 및 access token 블랙리스트로
-                jwtRedisService.deleteValues(userid);
-
-                String accessToken = jwtUtils.getToken(httpServletRequest);
-                Long expiration = tokenProvider.getExpiration(accessToken);
-                jwtRedisService.setBlackList(accessToken, "access_token", expiration);
-
-                return "signed out: "+userid;
-            }else{
-                return "anonymousUser";
-            }
-
-
-        } else {
-            // 인증 정보가 없는 경우 처리
-            System.out.println("인증 정보 없음");
-            return "인증 정보 없음";
-        }
-
+    public ResForm<String> signout(HttpServletRequest httpServletRequest){
+        String signOutReturn = memberService.signOut(httpServletRequest);
+        return ResForm.onSuccess(InSuccess.SIGNOUT_SUCCESS, signOutReturn);
     }
 
     @Operation(summary = "토큰 유효화 API", description = "입력한 JWT 토큰을 유효화 합니다. 유효화 기간은 10분 입니다.")

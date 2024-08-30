@@ -7,15 +7,22 @@ import com.pay1oad.homepage.dto.login.MemberDTO;
 import com.pay1oad.homepage.exception.CustomException;
 import com.pay1oad.homepage.model.login.MemberAuth;
 import com.pay1oad.homepage.response.code.status.ErrorStatus;
+import com.pay1oad.homepage.security.JwtUtils;
 import com.pay1oad.homepage.security.TokenProvider;
+import io.jsonwebtoken.Claims;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import com.pay1oad.homepage.model.login.Member;
 import com.pay1oad.homepage.persistence.login.MemberRepository;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.Objects;
 import java.util.Optional;
 
 @Slf4j
@@ -26,6 +33,7 @@ public class MemberService {
 
     private final JwtRedisService jwtRedisService;
     private final TokenProvider tokenProvider;
+    private final JwtUtils jwtUtils;
 
     public Member create(final Member member) {
         if (member == null || member.getUsername() == null) {
@@ -130,6 +138,27 @@ public class MemberService {
 
         return responseSignUpDTO;
 
+    }
+
+    public String signOut(HttpServletRequest httpServletRequest){
+        String accessToken = jwtUtils.getToken(httpServletRequest);
+        if (accessToken != null && !accessToken.equalsIgnoreCase("null")) {
+
+            Claims claims = tokenProvider.parseClaims(accessToken);
+            if (claims.get("auth") == null) {
+                throw new CustomException(ErrorStatus.NOT_ACCESS_TOKEN);
+            }
+        }else{
+            throw new CustomException(ErrorStatus.CANNOT_FOUND_ACCESS_TOKEN);
+        }
+
+        Integer userId = jwtUtils.getUserId(httpServletRequest);
+        String userName = memberRepository.findByUserid(userId).getUsername();
+        jwtRedisService.deleteValues(userName);
+
+        Long expiration = tokenProvider.getExpiration(accessToken);
+        jwtRedisService.setBlackList(accessToken, "access_token", expiration);
+        return "signed out: "+userName;
     }
 
 

@@ -21,12 +21,16 @@ public enum ErrorStatus {
     PASSWD_FORMAT_NOT_VALID(HttpStatus.BAD_REQUEST, "MEMBER4003", "비밀번호 형식이 잘못되었습니다."),
     EMAIL_FORMAT_NOT_VALID(HttpStatus.BAD_REQUEST, "MEMBER4004", "이메일 형식이 잘못되었습니다."),
     DUPLICATED_USERNAME(HttpStatus.CONFLICT, "MEMBER4005", "이미 있는 사용자 이름입니다."),
+    UNEXPECTED_PRINCIPAL_TYPE(HttpStatus.BAD_REQUEST, "MEMBER4006", "잘못된 PRINCIPAL TYPE입니다."),
+
 
     EMAIL_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "ENAIL4001", "이메일 전송에 실패했습니다."),
 
     REFRESH_TOKEN_NOT_VALID(HttpStatus.UNAUTHORIZED, "TOKEN4001", "해당 refresh token은 더 이상 유효하지 않습니다."),
-    
-    
+    ACCESS_TOKEN_NOT_VALID(HttpStatus.UNAUTHORIZED, "TOKEN4002", "해당 access token은 더 이상 유효하지 않습니다."),
+    NOT_ACCESS_TOKEN(HttpStatus.BAD_REQUEST, "TOKEN4003", "해당 token은 access token이 아닙니다."),
+    CANNOT_FOUND_ACCESS_TOKEN(HttpStatus.NOT_FOUND, "TOKEN4004", "access token을 찾을 수 없습니다."),
+
     ;
     //
     private final HttpStatus httpStatus;
