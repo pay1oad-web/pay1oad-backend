@@ -38,7 +38,8 @@ public class SecurityConfig {
                         .ignoringRequestMatchers(new AntPathRequestMatcher("/auth/**"))
                         .ignoringRequestMatchers(new AntPathRequestMatcher("/verify/**"))
                         .ignoringRequestMatchers(new AntPathRequestMatcher("/board/**"))
-                        .ignoringRequestMatchers(new AntPathRequestMatcher("/admin/**")))
+                        .ignoringRequestMatchers(new AntPathRequestMatcher("/admin/**"))
+                        .ignoringRequestMatchers(new AntPathRequestMatcher("/email")))
 
                 .headers((headers) -> headers
                         .addHeaderWriter(new XFrameOptionsHeaderWriter(
