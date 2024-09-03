@@ -39,6 +39,7 @@ public class SecurityConfig {
                         .ignoringRequestMatchers(new AntPathRequestMatcher("/verify/**"))
                         .ignoringRequestMatchers(new AntPathRequestMatcher("/board/**"))
                         .ignoringRequestMatchers(new AntPathRequestMatcher("/admin/**"))
+                        .ignoringRequestMatchers(new AntPathRequestMatcher("/email"))
                         .ignoringRequestMatchers(new AntPathRequestMatcher("/category/**")) // CSRF ignore for category endpoints
                 )
 

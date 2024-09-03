@@ -9,9 +9,9 @@ spring:
   #DB
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/payload?serverTimezone=Asia/Seoul
-    username: root
-    password: Q!W@E#r4t5
+    url: ${SQL_URL}
+    username: ${SQL_NAME}
+    password: ${SQL_PASSWD}
 
   #JPA
   jpa:
@@ -26,8 +26,8 @@ spring:
   #REDIS
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
   #mail
   mail:
     host: smtp.gmail.com

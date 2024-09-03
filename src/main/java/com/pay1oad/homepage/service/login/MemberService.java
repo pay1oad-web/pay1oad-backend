@@ -1,21 +1,22 @@
 package com.pay1oad.homepage.service.login;
 import com.pay1oad.homepage.dto.JwtToken;
-import com.pay1oad.homepage.dto.ResponseDTO;
 import com.pay1oad.homepage.dto.login.LoginRequestDTO;
 import com.pay1oad.homepage.dto.login.LoginResponseDTO;
-import com.pay1oad.homepage.dto.login.MemberDTO;
 import com.pay1oad.homepage.exception.CustomException;
 import com.pay1oad.homepage.model.login.MemberAuth;
 import com.pay1oad.homepage.response.code.status.ErrorStatus;
+import com.pay1oad.homepage.security.JwtUtils;
 import com.pay1oad.homepage.security.TokenProvider;
+import io.jsonwebtoken.Claims;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import com.pay1oad.homepage.model.login.Member;
 import com.pay1oad.homepage.persistence.login.MemberRepository;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.Objects;
 import java.util.Optional;
 
 @Slf4j
@@ -26,6 +27,7 @@ public class MemberService {
 
     private final JwtRedisService jwtRedisService;
     private final TokenProvider tokenProvider;
+    private final JwtUtils jwtUtils;
 
     public Member create(final Member member) {
         if (member == null || member.getUsername() == null) {
@@ -132,7 +134,57 @@ public class MemberService {
 
     }
 
+    public String signOut(HttpServletRequest httpServletRequest){
+        String accessToken = jwtUtils.getToken(httpServletRequest);
+        if (accessToken != null && !accessToken.equalsIgnoreCase("null")) {
 
+            Claims claims = tokenProvider.parseClaims(accessToken);
+            if (claims.get("auth") == null) {
+                throw new CustomException(ErrorStatus.NOT_ACCESS_TOKEN);
+            }
+        }else{
+            throw new CustomException(ErrorStatus.CANNOT_FOUND_ACCESS_TOKEN);
+        }
+
+        Integer userId = jwtUtils.getUserId(httpServletRequest);
+        String userName = memberRepository.findByUserid(userId).getUsername();
+        jwtRedisService.deleteValues(userName);
+
+        Long expiration = tokenProvider.getExpiration(accessToken);
+        jwtRedisService.setBlackList(accessToken, "access_token", expiration);
+        return "signed out: "+userName;
+    }
+
+    public LoginResponseDTO.toRefreshDTO refreshToken(HttpServletRequest httpServletRequest){
+        //get token
+        String refreshToken = jwtUtils.getToken(httpServletRequest);
+        //log.info("token: "+token);
+
+        //get username
+        int userid= Integer.parseInt(tokenProvider.validateAndGetUserId(refreshToken));
+        Member member = memberRepository.findByUserid(userid);
+        String username=member.getUsername();
+
+        if (Objects.equals(jwtRedisService.getValues(username), refreshToken)) {
+            log.info("Refreshed: "+username.replaceAll("[\r\n]",""));
+
+            jwtRedisService.deleteValues(username);
+
+
+            final JwtToken token=tokenProvider.create(member);
+
+            //refresh
+            jwtRedisService.setValues(username, token.getRefreshToken(), Duration.ofDays(3));
+
+            return LoginResponseDTO.toRefreshDTO.builder()
+                    .userName(username)
+                    .accessToken(token.getAccessToken())
+                    .refreshToken(token.getRefreshToken())
+                    .build();
+        }else{
+            throw new CustomException(ErrorStatus.REFRESH_TOKEN_NOT_VALID);
+        }
+    }
 
 
 
