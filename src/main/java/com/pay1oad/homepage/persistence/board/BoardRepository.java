@@ -32,7 +32,10 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
 	@Query(value = "SELECT b FROM Board b JOIN FETCH b.member WHERE b.member.username LIKE %:username%")
 	Page<Board> findAllUsernameContaining(@Param("username") String username, Pageable pageable);
 
-// 카테고리별 게시글 조회를 명시적인 JPQL 쿼리로 변경
+	@Query(value = "SELECT b FROM Board b JOIN FETCH b.member WHERE b.title LIKE %:keyword% OR b.content LIKE %:keyword%")
+	Page<Board> findAllByTitleContainingOrContentContaining(@Param("keyword") String keyword, Pageable pageable);
+
+	// 카테고리별 게시글 조회를 명시적인 JPQL 쿼리로 변경
 	@Query("SELECT b FROM Board b JOIN FETCH b.member WHERE b.category = :category")
 	Page<Board> findByCategory(@Param("category") Category category, Pageable pageable);
 

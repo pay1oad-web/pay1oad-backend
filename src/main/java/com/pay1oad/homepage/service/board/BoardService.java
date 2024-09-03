@@ -46,20 +46,31 @@ public class BoardService {
         return new PageImpl<>(list, pageable, boards.getTotalElements());
     }
 
-    // 게시글 검색, isEmpty() == ""
     public Page<ResBoardListDTO> search(SearchDTO searchData, Pageable pageable) {
         Page<Board> result = null;
-        if (!searchData.getTitle().isEmpty()) {
+
+        // 제목과 내용을 모두 포함하여 검색
+        if (searchData.getTitle() != null && !searchData.getTitle().isEmpty()) {
             result = boardRepository.findAllTitleContaining(searchData.getTitle(), pageable);
-        } else if (!searchData.getContent().isEmpty()) {
+        }
+        // 내용만 포함하여 검색
+        else if (searchData.getContent() != null && !searchData.getContent().isEmpty()) {
             result = boardRepository.findAllContentContaining(searchData.getContent(), pageable);
-        } else if (!searchData.getUsername().isEmpty()) {
+        }
+        // 사용자 이름만 포함하여 검색
+        else if (searchData.getUsername() != null && !searchData.getUsername().isEmpty()) {
             result = boardRepository.findAllUsernameContaining(searchData.getUsername(), pageable);
         }
-        List<ResBoardListDTO> list = result.getContent().stream()
-                .map(ResBoardListDTO::fromEntity)
-                .collect(Collectors.toList());
-        return new PageImpl<>(list, pageable, result.getTotalElements());
+
+        if (result != null) {
+            List<ResBoardListDTO> list = result.getContent().stream()
+                    .map(ResBoardListDTO::fromEntity)
+                    .collect(Collectors.toList());
+            return new PageImpl<>(list, pageable, result.getTotalElements());
+        }
+
+        // 기본적으로 빈 결과 반환
+        return Page.empty(pageable);
     }
 
     public ResBoardWriteDTO write(BoardWriteDTO boardDTO, Member member) {
