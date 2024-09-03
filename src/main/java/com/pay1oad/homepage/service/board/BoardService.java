@@ -62,6 +62,8 @@ public class BoardService {
         return new PageImpl<>(list, pageable, result.getTotalElements());
     }
 
+    //
+
     public ResBoardWriteDTO write(BoardWriteDTO boardDTO, Member member) {
         Board board = BoardWriteDTO.ofEntity(boardDTO);  // 'ofEntity' 사용
         board.setMember(member);
