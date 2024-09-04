@@ -33,37 +33,41 @@ public class FileController {
     private final MemberService memberService;
 
     @PostMapping("/upload")
-    public CompletableFuture<ResponseEntity<List<ResFileUploadDTO>>> upload(
+    public ResponseEntity<List<ResFileUploadDTO>> upload(
             HttpServletRequest request,
             @PathVariable("categoryId") Long categoryId,
             @PathVariable("boardId") Long boardId,
-            @RequestParam("file") List<MultipartFile> files) {  // 중복된 @PathVariable 제거
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                String token = request.getHeader("Authorization").substring(7);
-                int userid = Integer.parseInt(tokenProvider.validateAndGetUserId(token));
-                Member member = memberService.getMemberByID(userid);
+            @RequestParam("file") List<MultipartFile> files) {
+        try {
+            // Authorization 헤더에서 토큰 추출
+            String token = request.getHeader("Authorization").substring(7);
+            int userid = Integer.parseInt(tokenProvider.validateAndGetUserId(token));
+            Member member = memberService.getMemberByID(userid);
 
-                // 파일 업로드 시작 로그
-                System.out.println("Starting file upload...");
+            // 파일 업로드 시작 로그
+            System.out.println("Starting file upload...");
 
-                // 파일 정보 출력
-                for (MultipartFile file : files) {
-                    System.out.println("File name: " + file.getOriginalFilename());
-                    System.out.println("File size: " + file.getSize());
-                    System.out.println("File type: " + file.getContentType());
-                }
-
-                List<ResFileUploadDTO> saveFile = fileService.upload(boardId, categoryId, files);
-                return ResponseEntity.status(HttpStatus.CREATED).body(saveFile);
-            } catch (IllegalArgumentException e) {
-                System.out.println("IllegalArgumentException: " + e.getMessage());
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
-            } catch (IOException e) {
-                System.out.println("IOException: " + e.getMessage());
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+            // 파일 정보 출력
+            for (MultipartFile file : files) {
+                System.out.println("File name: " + file.getOriginalFilename());
+                System.out.println("File size: " + file.getSize());
+                System.out.println("File type: " + file.getContentType());
             }
-        });
+
+            // 파일 업로드 처리
+            List<ResFileUploadDTO> saveFile = fileService.upload(boardId, categoryId, files);
+
+            // 성공적으로 파일 업로드 완료
+            return ResponseEntity.status(HttpStatus.OK).body(saveFile);
+        } catch (IllegalArgumentException e) {
+            System.out.println("IllegalArgumentException: " + e.getMessage());
+            // 클라이언트의 잘못된 요청
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        } catch (IOException e) {
+            System.out.println("IOException: " + e.getMessage());
+            // 서버 측 문제
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
     }
 
     @GetMapping("/download")

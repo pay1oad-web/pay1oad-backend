@@ -73,6 +73,8 @@ public class BoardService {
         return Page.empty(pageable);
     }
 
+    //
+
     public ResBoardWriteDTO write(BoardWriteDTO boardDTO, Member member) {
         Board board = BoardWriteDTO.ofEntity(boardDTO);  // 'ofEntity' 사용
         board.setMember(member);
